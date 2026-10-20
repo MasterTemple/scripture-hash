@@ -89,6 +89,7 @@
   --animate-pop: pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3);
   --animate-shake: shake 0.4s ease-in-out;
   --animate-fade-up: fade-up 0.3s ease-out;
+  --animate-settle: settle 0.3s ease-out;
 
   @keyframes caret {
     50% { opacity: 0; }
@@ -100,6 +101,9 @@
   @keyframes shake {
     20%, 60% { transform: translateX(-4px); }
     40%, 80% { transform: translateX(4px); }
+  }
+  @keyframes settle {
+    from { color: var(--success); }
   }
   @keyframes fade-up {
     from { transform: translateY(6px); opacity: 0; }

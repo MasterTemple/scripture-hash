@@ -5,7 +5,7 @@ import type { VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
 import { Kbd, Progress } from "@/components/ui/primitives";
 import { cn, percent } from "@/lib/utils";
-import { progress, typedRuns, wordParts, words, wordTyped, type WordState } from "@/practice/recite";
+import { progress, typedRuns, wordParts, words, type WordState } from "@/practice/recite";
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { useVerseFont } from "@/features/settings/FontPicker";
@@ -116,6 +116,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
                     hint={hints}
                     liveTypos={liveTypos}
                     punctuation={punctuation}
+                    settle={style === "words"}
                     peek={peeking}
                     caret={focused && i === p.done}
                   />
@@ -236,6 +237,7 @@ const WordView = memo(function WordView({
   hint,
   liveTypos,
   punctuation,
+  settle,
   peek,
   caret,
 }: {
@@ -246,12 +248,14 @@ const WordView = memo(function WordView({
   hint: boolean;
   liveTypos: boolean;
   punctuation: boolean;
+  settle: boolean;
   peek: boolean;
   caret: boolean;
 }) {
   // No transitions or entrance animations here: on phones they read as lag
   const caretEl = caret ? <span className="ml-px inline-block h-[1.1em] w-0.5 translate-y-[0.18em] rounded-full bg-primary animate-caret" /> : null;
-  if (state === "correct") return <span>{text} </span>;
+  // Whole words count on the space after them: the word settles in with a quick green fade
+  if (state === "correct") return <span className={settle ? "animate-settle" : undefined}>{text} </span>;
   if (state === "wrong")
     return (
       <span className="text-destructive underline decoration-destructive/50 decoration-wavy underline-offset-4" title={`You typed “${typed}”`}>
@@ -261,16 +265,6 @@ const WordView = memo(function WordView({
   if (state === "revealed") return <span className="text-warning">{text} </span>;
 
   const typing = state === "current" && partial !== "";
-
-  // Typed in full and right: green until a space moves on to the next word
-  if (typing && !peek && wordTyped(text, partial)) {
-    return (
-      <span>
-        <span className="rounded-[3px] bg-success-soft text-success ring-1 ring-success">{text}</span>
-        {caretEl}{" "}
-      </span>
-    );
-  }
 
   // Hidden: a blank as wide as the word, with its punctuation shown if asked, and its first
   // letter as a hint if asked. The word being typed keeps its blank's width, with what's typed
@@ -324,7 +318,7 @@ const WordView = memo(function WordView({
             !peek &&
             // In the word's own case and punctuation; wrong letters marked as typed, if asked
             typedRuns(text, partial).map((run, i) => (
-              <span key={i} className={run.ok || !liveTypos ? "text-primary" : "rounded-[2px] bg-destructive-soft text-destructive"}>
+              <span key={i} className={run.ok || !liveTypos ? undefined : "rounded-[2px] bg-destructive-soft text-destructive"}>
                 {run.text}
               </span>
             ))}
