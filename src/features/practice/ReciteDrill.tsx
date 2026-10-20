@@ -253,7 +253,8 @@ const WordView = memo(function WordView({
   caret: boolean;
 }) {
   // No transitions or entrance animations here: on phones they read as lag
-  const caretEl = caret ? <span className="ml-px inline-block h-[1.1em] w-0.5 translate-y-[0.18em] rounded-full bg-primary animate-caret" /> : null;
+  // The caret takes no room (its margins cancel its width), so it never moves the words after it
+  const caretEl = caret ? <span className="-mr-[3px] ml-px inline-block h-[1.1em] w-0.5 translate-y-[0.18em] rounded-full bg-primary animate-caret" /> : null;
   // Whole words count on the space after them: the word settles in with a quick green fade
   if (state === "correct") return <span className={settle ? "animate-settle" : undefined}>{text} </span>;
   if (state === "wrong")
