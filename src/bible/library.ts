@@ -7,6 +7,22 @@ import type { WorkerRequest, WorkerResponse } from "./worker";
 /** Parsed books, by `${translationId}/${bookId}` */
 const db = createStore("scripture-hash", "books");
 
+/** Bump when parse.ts reads books differently (what it keeps of a verse, how it cleans text) */
+const PARSER = 2;
+
+/** What reads books now; a downloaded book read by something else is downloaded again */
+export const READER = `${PARSER}/logoxide ${__LOGOXIDE_VERSION__}`;
+
+/** A book as saved: `reader` is what read it (missing for books saved before it was recorded) */
+type SavedBook = BookText & { reader?: string };
+
+/**
+ * Whether a saved book can be used as it is. Uploads always can, since there's nothing to read
+ * them again from; downloads only when read by today's reader.
+ */
+export const isCurrent = (saved: SavedBook, translation: Translation) =>
+  translation.source.kind !== "fetch" || saved.reader === READER;
+
 type Pending = {
   resolve: (r: { books: BookText[]; skipped: string[] }) => void;
   reject: (e: Error) => void;
@@ -60,13 +76,19 @@ export function loadBook(translation: Translation, bookId: number): Promise<Book
   let book = memory.get(key);
   if (!book) {
     book = (async () => {
-      const saved = await get<BookText>(key, db).catch(() => undefined);
-      if (saved) return saved;
+      const saved = await get<SavedBook>(key, db).catch(() => undefined);
+      if (saved && isCurrent(saved, translation)) return saved;
       if (translation.source.kind !== "fetch") return null;
       const url = fetchBookUrl(translation.source.id, bookById(bookId).usfm);
-      const { books } = await call({ type: "fetchBook", url });
-      const parsed = books[0] ?? null;
-      if (parsed) await set(key, parsed, db).catch(() => {});
+      let parsed: BookText | null;
+      try {
+        parsed = (await call({ type: "fetchBook", url })).books[0] ?? null;
+      } catch (error) {
+        // Offline, a book read the old way is better than none
+        if (saved) return saved;
+        throw error;
+      }
+      if (parsed) await set(key, { ...parsed, reader: READER } satisfies SavedBook, db).catch(() => {});
       return parsed;
     })();
     book.catch(() => memory.delete(key));
@@ -116,7 +138,7 @@ export async function importFiles(translationId: string, files: File[], onProgre
   const { books, skipped } = await call({ type: "parseFiles", files: payload }, payload.map((p) => p.bytes), onProgress);
   for (const book of books) {
     const key = cacheKey(translationId, book.bookId);
-    await set(key, book, db);
+    await set(key, { ...book, reader: READER } satisfies SavedBook, db);
     memory.set(key, Promise.resolve(book));
   }
   return { books: books.map((b) => b.bookId).sort((a, b) => a - b), skipped };
