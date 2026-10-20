@@ -25,6 +25,13 @@ describe("readBook", () => {
     expect(book.verses["1:1"]!.text).toMatch(/^The elder unto the wellbeloved Gaius/);
     expect(Object.values(book.verses).some((v) => v.text.includes("¶"))).toBe(false);
   });
+
+  it("reads a verse printed in parts whole", () => {
+    const usfm = "\\id 3JN\n\\c 1\n\\p\n\\v 1 One.\n\\v 2a Two begins,\n\\p\n\\v 2b and ends.\n\\v 3 Three.\n";
+    const book = readBook(lx, topos, "usfm", usfm)!;
+    expect(book.verses["1:2"]).toEqual({ text: "Two begins, and ends." });
+    expect(Object.keys(book.verses)).toEqual(["1:1", "1:2", "1:3"]);
+  });
 });
 
 describe("files", () => {

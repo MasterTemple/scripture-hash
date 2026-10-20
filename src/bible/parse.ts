@@ -23,7 +23,8 @@ export function readBook(lx: Logoxide, topos: Topos, markup: Markup, source: str
     if (!bookId || !osis) return null;
     const verses: Record<string, VerseText> = {};
     for (const v of book.verses()) {
-      if (v.part !== 0) continue;
+      // A verse printed in parts ("20a", "20b") is read whole once, from its first part
+      if (v.part > 0 && verses[`${v.chapter}:${v.verse}`]) continue;
       // Verses printed together ("4-5") share their text
       const last = v.lastChapter === v.chapter ? v.last : v.verse;
       const ref = last > v.verse ? `${osis}.${v.chapter}.${v.verse}-${osis}.${v.chapter}.${last}` : `${osis}.${v.chapter}.${v.verse}`;
