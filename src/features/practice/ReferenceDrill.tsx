@@ -1,15 +1,18 @@
 import { ArrowRightIcon, CheckIcon, EyeIcon, SkipForwardIcon, XIcon } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { bookById } from "@/bible/topos";
 import type { VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
 import { Input, Kbd } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
-import { grade, type Grade, type Guess, type PartResult } from "@/practice/reference";
+import { grade, partsToAsk, type Grade, type Guess, type PartResult } from "@/practice/reference";
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { BookInput } from "./BookInput";
 import { Card, Scripture, VerseStatus } from "./common";
+
+/** A part filled in for you: still a field, but not one to type in (and not dimmed) */
+const GIVEN = "text-lg font-medium disabled:cursor-default disabled:opacity-100 disabled:bg-muted disabled:text-foreground";
 
 const partClass = (r: PartResult | undefined) =>
   cn(
@@ -20,7 +23,9 @@ const partClass = (r: PartResult | undefined) =>
 /** Shows a verse; the reference is to be named */
 export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[] }) {
   const translation = useTranslation();
-  const ask = useApp((s) => s.settings.ask);
+  const chosen = useApp((s) => s.settings.ask);
+  // A book or chapter every verse shares is filled in, since it's obvious
+  const { ask, obvious } = useMemo(() => partsToAsk(chosen, pool), [chosen, pool]);
   const autoAdvance = useApp((s) => s.settings.autoAdvance);
   const record = useApp((s) => s.record);
   const markMissing = useSession((s) => s.markMissing);
@@ -35,11 +40,12 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
   const book = bookById(verse.bookId);
   const span = state.status === "ready" ? state.verse.span : undefined;
 
-  // A new verse: clear the answer, keeping what's given
+  // A new verse, or other parts to ask for: clear the answer
+  const asking = `${ask.book}${ask.chapter}${ask.verse}`;
   useEffect(() => {
     setGuess({ book: "", chapter: "", verse: "" });
     setResult(null);
-  }, [verse]);
+  }, [verse, asking]);
 
   const firstAsked = () => (ask.book ? bookRef : ask.chapter ? chapterRef : verseRef).current;
   useEffect(() => {
@@ -115,7 +121,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
               className={cn("min-w-0 flex-1 basis-48", result && partInputClass(result.book))}
             />
           ) : (
-            <span className="px-1 text-lg font-semibold">{book.name}</span>
+            <Input disabled value={book.name} aria-label="Book" className={cn(GIVEN, "h-12 min-w-0 flex-1 basis-48")} />
           )}
           <div className="flex items-center gap-1.5">
             {ask.chapter ? (
@@ -132,7 +138,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
                 onKeyDown={onKey(() => verseRef.current?.focus())}
               />
             ) : (
-              <span className="text-lg font-semibold tabular-nums">{verse.chapter}</span>
+              <Input disabled value={verse.chapter} aria-label="Chapter" className={cn(GIVEN, "h-12 w-16 text-center tabular-nums")} />
             )}
             <span className="text-lg font-semibold text-muted-foreground">:</span>
             {ask.verse ? (
@@ -149,11 +155,16 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
                 onKeyDown={onKey(null)}
               />
             ) : (
-              <span className="text-lg font-semibold tabular-nums">{verseLabel}</span>
+              <Input disabled value={verseLabel} aria-label="Verse" className={cn(GIVEN, "h-12 text-center tabular-nums", span ? "w-20" : "w-16")} />
             )}
           </div>
         </div>
 
+        {(obvious.book || obvious.chapter) && !result && (
+          <p className="-mt-1 text-xs text-muted-foreground">
+            Every verse here is in {obvious.chapter ? `${book.name} ${verse.chapter}` : book.name}, so {obvious.chapter && obvious.book ? "those are" : "that's"} filled in.
+          </p>
+        )}
         {result ? (
           <div className="flex w-full max-w-xl flex-col items-center gap-3 animate-fade-up">
             <div

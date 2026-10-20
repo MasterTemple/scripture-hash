@@ -46,3 +46,23 @@ export function grade(target: VerseRef, guess: Guess, ask: Settings["ask"], span
     answer: `${bookName} ${Number.isNaN(chapter) ? "?" : chapter}:${Number.isNaN(verse) ? "?" : verse}`,
   };
 }
+
+export interface Asked {
+  ask: Settings["ask"];
+  /** Parts left out because every verse being practiced shares them */
+  obvious: { book: boolean; chapter: boolean };
+}
+
+/**
+ * What to ask for, given the verses being practiced: when they're all in one book (or one
+ * chapter), naming it tells nothing, so it's filled in. The verse is asked when nothing else is.
+ */
+export function partsToAsk(ask: Settings["ask"], pool: VerseRef[]): Asked {
+  const first = pool[0];
+  const oneBook = !!first && pool.every((v) => v.bookId === first.bookId);
+  const oneChapter = oneBook && pool.every((v) => v.chapter === first!.chapter);
+  const obvious = { book: oneBook && ask.book, chapter: oneChapter && ask.chapter };
+  const asked = { book: ask.book && !oneBook, chapter: ask.chapter && !oneChapter, verse: ask.verse };
+  if (!asked.book && !asked.chapter && !asked.verse) asked.verse = true;
+  return { ask: asked, obvious };
+}

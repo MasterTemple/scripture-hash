@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { loadTopos } from "@/bible/topos";
 import { pickNext } from "@/practice/queue";
 import { progress, words } from "@/practice/recite";
-import { grade } from "@/practice/reference";
+import { grade, partsToAsk } from "@/practice/reference";
 import { verseKey } from "@/bible/types";
 
 beforeAll(loadTopos);
@@ -70,5 +70,24 @@ describe("pickNext", () => {
     let weak = 0;
     for (let i = 0; i < 200; i++) if (pickNext(pool, null, "weakest", new Set(), stats)!.verse === 1) weak++;
     expect(weak).toBeGreaterThan(120);
+  });
+});
+
+describe("partsToAsk", () => {
+  const v = (bookId: number, chapter: number, verse: number) => ({ bookId, chapter, verse });
+  it("fills in a book every verse shares", () => {
+    const r = partsToAsk(all, [v(45, 8, 28), v(45, 9, 1)]);
+    expect(r.ask).toEqual({ book: false, chapter: true, verse: true });
+    expect(r.obvious).toEqual({ book: true, chapter: false });
+  });
+  it("fills in a chapter every verse shares", () => {
+    expect(partsToAsk(all, [v(45, 8, 28), v(45, 8, 29)]).ask).toEqual({ book: false, chapter: false, verse: true });
+  });
+  it("asks everything across books", () => {
+    expect(partsToAsk(all, [v(45, 8, 28), v(43, 3, 16)]).ask).toEqual(all);
+  });
+  it("still asks something", () => {
+    const r = partsToAsk({ book: true, chapter: true, verse: false }, [v(45, 8, 28), v(45, 8, 29)]);
+    expect(r.ask).toEqual({ book: false, chapter: false, verse: true });
   });
 });

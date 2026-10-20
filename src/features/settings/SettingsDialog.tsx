@@ -62,7 +62,9 @@ export function SettingsDialog() {
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">Parts not asked for are filled in for you.</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Parts not asked for are filled in for you, and so are a book or chapter shared by every verse you're practicing.
+          </p>
         </div>
       </Section>
 
