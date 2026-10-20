@@ -62,6 +62,43 @@ export function markupOf(name: string, text: string): Markup | null {
   return null;
 }
 
+const DIV = /<div\b[^>]*?(\/?)>|<\/div\s*>/g;
+const BOOK_DIV = /\btype\s*=\s*["']book["']/;
+
+/**
+ * An OSIS file's books, each as a file of its own: logoxide reads one book a file, and would
+ * merge a whole Bible's into its first. A file of one book is returned as it is; `null` when
+ * its books are milestones (`<div type="book" sID="…"/>`), which this doesn't split.
+ */
+export function splitOsis(source: string): string[] | null {
+  const books: string[] = [];
+  let depth = 0;
+  let start = -1;
+  let bookDepth = -1;
+  for (const m of source.matchAll(DIV)) {
+    if (m[0].startsWith("</")) {
+      depth--;
+      if (depth === bookDepth) {
+        books.push(source.slice(start, m.index + m[0].length));
+        start = bookDepth = -1;
+      }
+    } else if (m[1]) {
+      if (start < 0 && BOOK_DIV.test(m[0])) return null;
+    } else {
+      if (start < 0 && BOOK_DIV.test(m[0])) {
+        start = m.index;
+        bookDepth = depth;
+      }
+      depth++;
+    }
+  }
+  const osisText = /<osisText\b[^>]*>/.exec(source);
+  if (books.length < 2 || !osisText) return [source];
+  // Each book keeps the work's opening and header (which name its versification)
+  const head = source.slice(0, osisText.index + osisText[0].length) + (/<header\b[\s\S]*?<\/header>/.exec(source)?.[0] ?? "");
+  return books.map((book) => `${head}${book}</osisText></osis>`);
+}
+
 const SCRIPTURE = /\.(usfm|sfm|usx|xml|txt)$/i;
 
 /**
@@ -98,9 +135,16 @@ export function readFiles(
       continue;
     }
     try {
-      const book = readBook(lx, topos, markup, text);
-      if (book && Object.keys(book.verses).length) books.push(book);
-      else if (!file.inZip) skipped.push(file.name); // a zip's front matter and glossary aren't books
+      const sources = markup === "osis" ? splitOsis(text) : [text];
+      let found = false;
+      for (const source of sources ?? []) {
+        const book = readBook(lx, topos, markup, source);
+        if (book && Object.keys(book.verses).length) {
+          books.push(book);
+          found = true;
+        }
+      }
+      if (!found && !file.inZip) skipped.push(file.name); // a zip's front matter and glossary aren't books
     } catch {
       skipped.push(file.name);
     }

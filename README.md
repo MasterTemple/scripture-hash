@@ -16,7 +16,7 @@ Write what to learn the way you'd write it anywhere, e.g. `Rom 8:28-39; Ps 23`, 
 
 - **Built in**: BSB, KJV, WEB, ASV, LSV, and YLT. Each book downloads from [fetch.bible](https://fetch.bible) the first time it's needed and is then kept in IndexedDB, so it works offline.
 - **Browse more**: search fetch.bible's ~1,400 translations in many languages.
-- **Upload your own**: a `.zip` of a whole Bible in USFM or USX (for example eBible.org's `*_usfm.zip`), or individual `.usfm`/`.sfm`/`.usx`/OSIS book files. Files are parsed on your device and never uploaded anywhere.
+- **Upload your own**: a `.zip` of a whole Bible in USFM or USX (for example eBible.org's `*_usfm.zip`), an OSIS file of one book or a whole Bible, or individual `.usfm`/`.sfm`/`.usx` book files. Files are parsed on your device and never uploaded anywhere.
 
 ## How it's built
 

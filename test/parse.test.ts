@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { Logoxide, Topos } from "logoxide";
 import { describe, expect, it } from "vitest";
-import { markupOf, readBook, readFiles } from "@/bible/parse";
+import { markupOf, readBook, readFiles, splitOsis } from "@/bible/parse";
 
 const lx = Logoxide.new();
 const topos = Topos.new();
@@ -60,6 +60,29 @@ describe("files", () => {
     ]);
     expect(books.map((b) => b.bookId)).toEqual([43, 64]);
     expect(skipped).toEqual(["cover.png"]);
+  });
+});
+
+describe("OSIS", () => {
+  const osis = (body: string) =>
+    `<?xml version="1.0" encoding="UTF-8"?>\n<osis xmlns="http://www.bibletechnologies.net/2003/OSIS/namespace"><osisText osisIDWork="T" osisRefWork="Bible"><header><work osisWork="T"><title>T</title></work></header>${body}</osisText></osis>`;
+  const phlm = `<div type="book" osisID="Phlm"><chapter osisID="Phlm.1"><div type="section"><title>Greeting</title><p><verse osisID="Phlm.1.1">Paul, a prisoner.</verse></p></div></chapter></div>`;
+  const jude = `<div type="book" osisID="Jude"><chapter osisID="Jude.1"><verse osisID="Jude.1.1">Jude, a servant.</verse><verse osisID="Jude.1.2">Mercy to you.</verse></chapter></div>`;
+
+  it("reads each book of a whole Bible", () => {
+    const bible = osis(`<div type="bookGroup">${phlm}${jude}</div>`);
+    expect(splitOsis(bible)).toHaveLength(2);
+    const { books, skipped } = readFiles(lx, topos, [{ name: "bible.xml", bytes: new TextEncoder().encode(bible) }]);
+    expect(skipped).toEqual([]);
+    expect(books.map((b) => b.bookId)).toEqual([57, 65]);
+    expect(books[0]!.verses).toEqual({ "1:1": { text: "Paul, a prisoner." } });
+    expect(Object.keys(books[1]!.verses)).toEqual(["1:1", "1:2"]);
+  });
+
+  it("leaves a single book as it is, and won't split milestoned books", () => {
+    const one = osis(jude);
+    expect(splitOsis(one)).toEqual([one]);
+    expect(splitOsis(osis(`<div type="book" sID="b1" osisID="Jude"/>x<div eID="b1"/><div type="book" sID="b2" osisID="Phlm"/>y<div eID="b2"/>`))).toBe(null);
   });
 });
 
