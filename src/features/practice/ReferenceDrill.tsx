@@ -1,5 +1,5 @@
 import { ArrowRightIcon, CheckIcon, EyeIcon, SkipForwardIcon, XIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { bookById } from "@/bible/topos";
 import type { VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
@@ -125,16 +125,14 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
           )}
           <div className="flex items-center gap-1.5">
             {ask.chapter ? (
-              <Input
+              <NumberField
                 ref={chapterRef}
+                letter="C"
+                label="Chapter"
                 value={guess.chapter}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="C"
-                aria-label="Chapter"
                 readOnly={!!result}
-                className={cn("h-12 w-16 text-center text-lg font-medium tabular-nums", partClass(result?.chapter))}
-                onChange={(e) => setGuess((g) => ({ ...g, chapter: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
+                className={partClass(result?.chapter)}
+                onChange={(chapter) => setGuess((g) => ({ ...g, chapter }))}
                 onKeyDown={onKey(() => verseRef.current?.focus())}
               />
             ) : (
@@ -142,16 +140,14 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
             )}
             <span className="text-lg font-semibold text-muted-foreground">:</span>
             {ask.verse ? (
-              <Input
+              <NumberField
                 ref={verseRef}
+                letter="V"
+                label="Verse"
                 value={guess.verse}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="V"
-                aria-label="Verse"
                 readOnly={!!result}
-                className={cn("h-12 w-16 text-center text-lg font-medium tabular-nums", partClass(result?.verse))}
-                onChange={(e) => setGuess((g) => ({ ...g, verse: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
+                className={partClass(result?.verse)}
+                onChange={(verse) => setGuess((g) => ({ ...g, verse }))}
                 onKeyDown={onKey(null)}
               />
             ) : (
@@ -200,6 +196,54 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * A chapter or verse number. Empty, it shows its letter ("C", "V") in place of a placeholder,
+ * blinking where a caret would be while it's focused; the caret shows once there's a number.
+ */
+function NumberField({
+  ref,
+  letter,
+  label,
+  value,
+  readOnly,
+  className,
+  onChange,
+  onKeyDown,
+}: {
+  ref: RefObject<HTMLInputElement | null>;
+  letter: string;
+  label: string;
+  value: string;
+  readOnly: boolean;
+  className?: string;
+  onChange: (value: string) => void;
+  onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div className="relative">
+      <Input
+        ref={ref}
+        value={value}
+        inputMode="numeric"
+        pattern="[0-9]*"
+        aria-label={label}
+        readOnly={readOnly}
+        className={cn("peer h-12 w-16 text-center text-lg font-medium tabular-nums", !value && "caret-transparent", className)}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 3))}
+        onKeyDown={onKeyDown}
+      />
+      {!value && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 flex items-center justify-center text-lg font-medium text-muted-foreground peer-focus:animate-caret peer-focus:text-primary"
+        >
+          {letter}
+        </span>
+      )}
     </div>
   );
 }
