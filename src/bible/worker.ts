@@ -2,6 +2,7 @@
 // Parses USFM and USX with logoxide off the main thread: its WebAssembly is large and a
 // whole Bible takes a moment, so the page stays responsive and only loads it when needed.
 import { initialized, Logoxide, Topos } from "logoxide";
+import { describeError } from "./errors";
 import { readBook, readFiles } from "./parse";
 import type { BookText } from "./types";
 
@@ -41,21 +42,11 @@ async function handle(req: WorkerRequest): Promise<{ books: BookText[]; skipped:
   });
 }
 
-const describe = (error: unknown) => {
-  if (error instanceof Error) return error.message;
-  // logoxide's errors carry `{ tag, message }`
-  if (typeof error === "object" && error && "value" in error) {
-    const value = (error as { value: { message?: string } }).value;
-    if (value?.message) return value.message;
-  }
-  return String(error);
-};
-
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const req = event.data;
   try {
     self.postMessage({ id: req.id, ok: true, ...(await handle(req)) } satisfies WorkerResponse);
   } catch (error) {
-    self.postMessage({ id: req.id, ok: false, error: describe(error) } satisfies WorkerResponse);
+    self.postMessage({ id: req.id, ok: false, error: describeError(error) } satisfies WorkerResponse);
   }
 };
