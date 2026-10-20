@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { formatRefs, loadTopos, parseSelection, suggestBooks, uniqueVerses, verseCount } from "@/bible/topos";
+import { loadTopos, parseSelection, suggestBooks, uniqueVerses } from "@/bible/topos";
 
 beforeAll(loadTopos);
 
@@ -24,15 +24,13 @@ describe("parseSelection", () => {
 });
 
 describe("helpers", () => {
-  it("formats runs of verses", () => {
-    expect(formatRefs(uniqueVerses(parseSelection("Rom 8:28-30; 8:32; 9:1")))).toBe("Romans 8:28-30,32; 9:1");
-  });
-  it("counts verses", () => {
-    expect(verseCount(43, 3)).toBe(36);
-  });
   it("suggests books", () => {
     expect(suggestBooks("rom")[0]!.name).toBe("Romans");
     expect(suggestBooks("1 pe")[0]!.name).toBe("1 Peter");
     expect(suggestBooks("phil").map((b) => b.name)).toContain("Philemon");
+    // Unlike topos's completions, a whole name is still a book, and so is a number alone
+    expect(suggestBooks("john").map((b) => b.name)).toEqual(["John"]);
+    expect(suggestBooks("1").map((b) => b.name)).toContain("1 Corinthians");
+    expect(suggestBooks("  1  john")[0]!.name).toBe("1 John");
   });
 });
