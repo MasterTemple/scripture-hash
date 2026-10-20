@@ -5,7 +5,7 @@ import type { VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
 import { Kbd, Progress } from "@/components/ui/primitives";
 import { cn, percent } from "@/lib/utils";
-import { progress, words, type WordState } from "@/practice/recite";
+import { progress, typedRuns, words, type WordState } from "@/practice/recite";
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { useVerseFont } from "@/features/settings/FontPicker";
@@ -17,6 +17,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   const style = useApp((s) => s.settings.reciteStyle);
   // First-letter hints would give every answer away when typing first letters
   const hints = useApp((s) => s.settings.firstLetterHints && s.settings.reciteStyle === "words");
+  const liveTypos = useApp((s) => s.settings.liveTypos);
   const autoAdvance = useApp((s) => s.settings.autoAdvance);
   const verseFont = useVerseFont();
   const record = useApp((s) => s.record);
@@ -112,6 +113,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
                     typed={p.typed[i]!}
                     partial={i === p.done ? p.partial : ""}
                     hint={hints}
+                    liveTypos={liveTypos}
                     peek={peeking}
                     caret={focused && i === p.done}
                   />
@@ -230,6 +232,7 @@ const WordView = memo(function WordView({
   typed,
   partial,
   hint,
+  liveTypos,
   peek,
   caret,
 }: {
@@ -238,6 +241,7 @@ const WordView = memo(function WordView({
   typed: string;
   partial: string;
   hint: boolean;
+  liveTypos: boolean;
   peek: boolean;
   caret: boolean;
 }) {
@@ -283,7 +287,14 @@ const WordView = memo(function WordView({
       <span className="inline-grid">
         <span className="[grid-area:1/1]">{blank}</span>
         <span className="pointer-events-none whitespace-nowrap [grid-area:1/1]">
-          {typing && !peek && <span className="text-primary">{partial}</span>}
+          {typing &&
+            !peek &&
+            // In the word's own case and punctuation; wrong letters marked as typed, if asked
+            typedRuns(text, partial).map((run, i) => (
+              <span key={i} className={run.ok || !liveTypos ? "text-primary" : "rounded-[2px] bg-destructive-soft text-destructive"}>
+                {run.text}
+              </span>
+            ))}
           {caretEl}
         </span>
       </span>{" "}

@@ -24,6 +24,8 @@ export interface Settings {
   reciteStyle: ReciteStyle;
   /** Reciting: show each hidden word's first letter faintly */
   firstLetterHints: boolean;
+  /** Reciting whole words: mark a wrong letter as it's typed, not once the word is done */
+  liveTypos: boolean;
   /** Go to the next verse on its own after a correct answer */
   autoAdvance: boolean;
   /** The font the verse is typed in */
@@ -98,6 +100,7 @@ export const useApp = create<State>()(
         order: "shuffle",
         reciteStyle: "letters",
         firstLetterHints: false,
+        liveTypos: false,
         autoAdvance: true,
         reciteFont: DEFAULT_FONT,
         theme: "system",

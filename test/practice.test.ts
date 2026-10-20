@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadTopos } from "@/bible/topos";
 import { pickNext } from "@/practice/queue";
-import { progress, words } from "@/practice/recite";
+import { progress, typedRuns, words } from "@/practice/recite";
 import { grade, partsToAsk } from "@/practice/reference";
 import { verseKey } from "@/bible/types";
 
@@ -89,5 +89,21 @@ describe("partsToAsk", () => {
   it("still asks something", () => {
     const r = partsToAsk({ book: true, chapter: true, verse: false }, [v(45, 8, 28), v(45, 8, 29)]);
     expect(r.ask).toEqual({ book: false, chapter: false, verse: true });
+  });
+});
+
+describe("typedRuns", () => {
+  const shown = (word: string, partial: string) => typedRuns(word, partial).map((r) => (r.ok ? r.text : `[${r.text}]`)).join("");
+  it("takes the word's case and punctuation", () => {
+    expect(shown("God", "g")).toBe("G");
+    expect(shown("“God’s", "gods")).toBe("“God’s");
+    expect(shown("LORD,", "lord")).toBe("LORD,");
+    expect(shown("LORD,", "lo")).toBe("LO");
+    expect(shown("Father's", "father'")).toBe("Father'");
+  });
+  it("marks letters that don't match", () => {
+    expect(shown("world", "wro")).toBe("w[ro]");
+    expect(shown("the", "thee")).toBe("the[e]");
+    expect(typedRuns("love", "lvoe").filter((r) => !r.ok).length).toBeGreaterThan(0);
   });
 });

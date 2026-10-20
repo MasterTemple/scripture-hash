@@ -101,3 +101,49 @@ export function progress(verse: Word[], input: string, style: ReciteStyle, revea
     score: (right - (verse.length - counted)) / counted,
   };
 }
+
+/** A run of the word being typed, as it's drawn */
+export interface TypedRun {
+  text: string;
+  /** Whether it matches the word so far (punctuation and case don't matter) */
+  ok: boolean;
+}
+
+const isWordChar = (ch: string) => /[\p{L}\p{N}]/u.test(ch);
+const fold = (ch: string) => normalize(ch).toLowerCase();
+
+/**
+ * What's typed of a word, drawn as the word is printed: each letter takes the word's own
+ * case ("gods" → "God's"), and its punctuation comes along. Letters that don't match are kept
+ * as typed and marked, so typos can show right away.
+ */
+export function typedRuns(word: string, partial: string): TypedRun[] {
+  const target = [...word];
+  const runs: TypedRun[] = [];
+  const push = (text: string, ok: boolean) => {
+    const last = runs[runs.length - 1];
+    if (last && last.ok === ok) last.text += text;
+    else runs.push({ text, ok });
+  };
+  let i = 0;
+  for (const ch of partial) {
+    if (!isWordChar(ch)) {
+      // Punctuation is optional: take it where the word has it, else pass over it
+      if (i < target.length && fold(target[i]!) === fold(ch)) push(target[i++]!, true);
+      continue;
+    }
+    // The word's punctuation before this letter comes along
+    let lead = "";
+    while (i < target.length && !isWordChar(target[i]!)) lead += target[i++];
+    if (i < target.length && fold(target[i]!) === fold(ch)) {
+      push(lead + target[i++]!, true);
+    } else {
+      if (lead) push(lead, true);
+      push(ch, false);
+      if (i < target.length) i++;
+    }
+  }
+  // Punctuation that ends the word ("Lord,") shows once its letters are all typed
+  if (runs.length && runs.every((r) => r.ok) && target.slice(i).every((c) => !isWordChar(c))) push(target.slice(i).join(""), true);
+  return runs;
+}

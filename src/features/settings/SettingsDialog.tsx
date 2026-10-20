@@ -94,9 +94,14 @@ export function SettingsDialog() {
           <FontPreview />
         </div>
         {settings.reciteStyle === "words" && (
-          <Row title="First-letter hints" description="Show each hidden word's first letter." htmlFor="hints">
-            <Switch id="hints" checked={settings.firstLetterHints} onCheckedChange={(firstLetterHints) => update({ firstLetterHints })} />
-          </Row>
+          <>
+            <Row title="Show typos as I type" description="Mark a wrong letter right away, not once the word is done." htmlFor="live-typos">
+              <Switch id="live-typos" checked={settings.liveTypos} onCheckedChange={(liveTypos) => update({ liveTypos })} />
+            </Row>
+            <Row title="First-letter hints" description="Show each hidden word's first letter." htmlFor="hints">
+              <Switch id="hints" checked={settings.firstLetterHints} onCheckedChange={(firstLetterHints) => update({ firstLetterHints })} />
+            </Row>
+          </>
         )}
       </Section>
 
