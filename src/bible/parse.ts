@@ -5,9 +5,16 @@ export type Markup = "usx" | "usfm" | "osis";
 
 const options = { notes: false, headings: false, classPrefix: "" };
 
-/** Cleans what logoxide's plain text keeps that a reader doesn't type: paragraph marks, extra spaces */
-const clean = (text: string) =>
+/**
+ * Cleans what logoxide's plain text keeps that a reader doesn't type: paragraph marks, extra
+ * spaces, and the invisible characters logoxide's verse hashes drop (zero-width space,
+ * byte-order mark, soft hyphen, word joiner; joiners that shape a script are kept). Composed
+ * (NFC), so "é" is one character however the file wrote it.
+ */
+export const clean = (text: string) =>
   text
+    .normalize("NFC")
+    .replace(/[\u200B\uFEFF\u00AD\u2060]/g, "")
     .replace(/[¶§]/g, "")
     .replace(/\s+/g, " ")
     .trim();

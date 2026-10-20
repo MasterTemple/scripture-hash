@@ -8,7 +8,7 @@ import type { WorkerRequest, WorkerResponse } from "./worker";
 const db = createStore("scripture-hash", "books");
 
 /** Bump when parse.ts reads books differently (what it keeps of a verse, how it cleans text) */
-const PARSER = 2;
+const PARSER = 3;
 
 /** What reads books now; a downloaded book read by something else is downloaded again */
 export const READER = `${PARSER}/logoxide ${__LOGOXIDE_VERSION__}`;

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { Logoxide, Topos } from "logoxide";
 import { describe, expect, it } from "vitest";
-import { markupOf, readBook, readFiles, splitOsis } from "@/bible/parse";
+import { clean, markupOf, readBook, readFiles, splitOsis } from "@/bible/parse";
 
 const lx = Logoxide.new();
 const topos = Topos.new();
@@ -41,6 +41,18 @@ describe("readBook", () => {
     expect(book.verses["1:31"]).toEqual(bridge);
     expect(book.verses["2:1"]).toEqual(bridge);
     expect(book.verses["2:2"]).toEqual({ text: "Two." });
+  });
+});
+
+describe("clean", () => {
+  it("composes, and drops invisible characters but not a script's joiners", () => {
+    expect(clean(" ¶ Cafe\u0301\u00A0a\u200Bb c\u00ADd e\u2060f\uFEFF  g ")).toBe("Caf\u00E9 ab cd ef g");
+    expect(clean("\u0645\u06CC\u200C\u0634\u0648\u062F")).toBe("\u0645\u06CC\u200C\u0634\u0648\u062F");
+  });
+
+  it("is applied to every verse", () => {
+    const book = readBook(lx, topos, "usfm", "\\id 3JN\n\\c 1\n\\p\n\\v 1 Cafe\u0301 a\u200Bb.\n")!;
+    expect(book.verses["1:1"]!.text).toBe("Caf\u00E9 ab.");
   });
 });
 
