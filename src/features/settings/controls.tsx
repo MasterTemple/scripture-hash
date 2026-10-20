@@ -1,0 +1,167 @@
+import { ArrowDownWideNarrowIcon, ListOrderedIcon, ShuffleIcon } from "lucide-react";
+import { useId, type ReactNode } from "react";
+import { Label, Switch } from "@/components/ui/primitives";
+import { Segmented } from "@/components/ui/segmented";
+import { cn } from "@/lib/utils";
+import { useSession } from "@/state/session";
+import { useApp, type Order, type ReciteStyle, type Settings } from "@/state/store";
+import { FontPicker, useVerseFont } from "./FontPicker";
+
+// The settings, each bound to the store, shared by the settings dialog and the panel under
+// the practice area
+
+export function Row({ title, description, children, htmlFor }: { title: string; description?: ReactNode; children: ReactNode; htmlFor?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-6 py-3">
+      <div className="space-y-0.5">
+        <Label htmlFor={htmlFor} className="text-sm">
+          {title}
+        </Label>
+        {description && <p className="text-xs leading-snug text-muted-foreground">{description}</p>}
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
+  );
+}
+
+function SwitchRow({ title, description, setting }: { title: string; description: string; setting: "showPunctuation" | "liveTypos" | "firstLetterHints" | "autoAdvance" }) {
+  const id = useId();
+  const on = useApp((s) => s.settings[setting]);
+  const update = useApp((s) => s.updateSettings);
+  return (
+    <Row title={title} description={description} htmlFor={id}>
+      <Switch id={id} checked={on} onCheckedChange={(v) => update({ [setting]: v })} />
+    </Row>
+  );
+}
+
+/** Which parts of a reference to ask for (at least one) */
+export function AskParts({ note = true }: { note?: boolean }) {
+  const ask = useApp((s) => s.settings.ask);
+  const update = useApp((s) => s.updateSettings);
+  const count = Number(ask.book) + Number(ask.chapter) + Number(ask.verse);
+  const toggle = (part: keyof Settings["ask"]) => {
+    if (ask[part] && count === 1) return;
+    update({ ask: { ...ask, [part]: !ask[part] } });
+  };
+  return (
+    <div className="py-3">
+      <p className="mb-2.5 text-xs text-muted-foreground">Ask me for…</p>
+      <div className="grid grid-cols-3 gap-2">
+        {(["book", "chapter", "verse"] as const).map((part) => (
+          <button
+            key={part}
+            onClick={() => toggle(part)}
+            disabled={ask[part] && count === 1}
+            className={cn(
+              "rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors disabled:cursor-not-allowed",
+              ask[part] ? "border-primary/40 bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-muted",
+            )}
+            aria-pressed={ask[part]}
+          >
+            {part}
+          </button>
+        ))}
+      </div>
+      {note && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Parts not asked for are filled in for you, and so are a book or chapter shared by every verse you're practicing.
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function ReciteStyleRow() {
+  const style = useApp((s) => s.settings.reciteStyle);
+  const update = useApp((s) => s.updateSettings);
+  return (
+    <Row title="Type" description={style === "letters" ? "One key per word: its first letter." : "Each word in full, then a space."}>
+      <Segmented<ReciteStyle>
+        size="sm"
+        value={style}
+        onChange={(reciteStyle) => update({ reciteStyle })}
+        options={[
+          { value: "letters", label: "First letters" },
+          { value: "words", label: "Whole words" },
+        ]}
+      />
+    </Row>
+  );
+}
+
+export function FontRow({ preview = true }: { preview?: boolean }) {
+  return (
+    <div className="space-y-2 py-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-0.5">
+          <Label className="text-sm">Font</Label>
+          <p className="text-xs leading-snug text-muted-foreground">What the verse is typed in.</p>
+        </div>
+        <div className="w-48 shrink-0 sm:w-56">
+          <FontPicker />
+        </div>
+      </div>
+      {preview && <FontPreview />}
+    </div>
+  );
+}
+
+/** A line of verse in the chosen font, half typed, as reciting shows it */
+function FontPreview() {
+  const family = useVerseFont();
+  return (
+    <p className="rounded-lg bg-muted/60 px-3 py-2.5 text-lg leading-relaxed [font-variant-ligatures:none]" style={{ fontFamily: family }}>
+      For God so loved the{" "}
+      <span className="rounded-[3px] bg-accent text-transparent select-none">world,</span>{" "}
+      <span className="rounded-[3px] bg-muted text-transparent select-none">that</span>{" "}
+      <span className="rounded-[3px] bg-muted text-transparent select-none">He</span>{" "}
+      <span className="rounded-[3px] bg-muted text-transparent select-none">gave</span>
+    </p>
+  );
+}
+
+export const PunctuationRow = () => (
+  <SwitchRow title="Show punctuation" description="Show hidden words' punctuation, so each blank is only letters to type." setting="showPunctuation" />
+);
+
+/** Settings for typing whole words; nothing when typing first letters */
+export function WholeWordRows() {
+  const style = useApp((s) => s.settings.reciteStyle);
+  if (style !== "words") return null;
+  return (
+    <>
+      <SwitchRow title="Show typos as I type" description="Mark a wrong letter right away, not once the word is done." setting="liveTypos" />
+      <SwitchRow title="First-letter hints" description="Show each hidden word's first letter." setting="firstLetterHints" />
+    </>
+  );
+}
+
+export function OrderRow() {
+  const order = useApp((s) => s.settings.order);
+  const update = useApp((s) => s.updateSettings);
+  return (
+    <Row
+      title="Order"
+      description={
+        order === "shuffle" ? "Random, each verse once before any repeat." : order === "sequential" ? "Straight through the selection." : "Random, favoring verses you miss."
+      }
+    >
+      <Segmented<Order>
+        size="sm"
+        value={order}
+        onChange={(order) => {
+          update({ order });
+          useSession.setState({ asked: new Set() });
+        }}
+        options={[
+          { value: "shuffle", label: <ShuffleIcon />, title: "Shuffle" },
+          { value: "sequential", label: <ListOrderedIcon />, title: "In order" },
+          { value: "weakest", label: <ArrowDownWideNarrowIcon />, title: "Weakest first" },
+        ]}
+      />
+    </Row>
+  );
+}
+
+export const AutoAdvanceRow = () => <SwitchRow title="Move on when right" description="Go to the next verse after a correct answer." setting="autoAdvance" />;

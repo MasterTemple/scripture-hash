@@ -12,6 +12,7 @@ import { ReciteDrill } from "@/features/practice/ReciteDrill";
 import { ReferenceDrill } from "@/features/practice/ReferenceDrill";
 import { SelectionPanel, SelectionSummary } from "@/features/selection/SelectionPanel";
 import { SettingsDialog } from "@/features/settings/SettingsDialog";
+import { TabSettings } from "@/features/settings/TabSettings";
 import { TranslationDialog } from "@/features/translations/TranslationDialog";
 import { usePrefetch, useKeepCurrent, useSelection, useSession } from "@/state/session";
 import { useApp, useTranslation, type Mode } from "@/state/store";
@@ -186,6 +187,7 @@ export default function App() {
                       <ReciteDrill verse={current} pool={selection.pool} />
                     )
                   ) : null}
+                  <TabSettings />
                 </>
               )}
             </div>

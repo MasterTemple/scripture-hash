@@ -30,6 +30,8 @@ export interface Settings {
   showPunctuation: boolean;
   /** Go to the next verse on its own after a correct answer */
   autoAdvance: boolean;
+  /** Whether the current tab's settings under the practice area are expanded (wider screens) */
+  tabSettingsOpen: boolean;
   /** The font the verse is typed in */
   reciteFont: FontChoice;
   theme: Theme;
@@ -106,6 +108,7 @@ export const useApp = create<State>()(
         showPunctuation: true,
         autoAdvance: true,
         reciteFont: DEFAULT_FONT,
+        tabSettingsOpen: true,
         theme: "system",
       },
       history: [],
