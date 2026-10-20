@@ -64,7 +64,7 @@ export function loadBook(translation: Translation, bookId: number): Promise<Book
       if (saved) return saved;
       if (translation.source.kind !== "fetch") return null;
       const url = fetchBookUrl(translation.source.id, bookById(bookId).usfm);
-      const { books } = await call({ type: "fetchBook", url, markup: "usx" });
+      const { books } = await call({ type: "fetchBook", url });
       const parsed = books[0] ?? null;
       if (parsed) await set(key, parsed, db).catch(() => {});
       return parsed;

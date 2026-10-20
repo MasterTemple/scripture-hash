@@ -7,7 +7,7 @@ import { readBook, readFiles } from "./parse";
 import type { BookText } from "./types";
 
 export type WorkerRequest =
-  | { id: number; type: "fetchBook"; url: string; markup: "usx" | "usfm" }
+  | { id: number; type: "fetchBook"; url: string }
   | { id: number; type: "parseFiles"; files: { name: string; bytes: ArrayBuffer }[] };
 
 export type WorkerResponse =
@@ -28,7 +28,7 @@ async function handle(req: WorkerRequest): Promise<{ books: BookText[]; skipped:
     const response = await fetch(req.url);
     if (response.status === 404) return { books: [], skipped: [] }; // the translation lacks the book
     if (!response.ok) throw new Error(`Download failed (${response.status} ${response.statusText})`);
-    const book = readBook(lx, topos, req.markup, await response.text());
+    const book = readBook(lx, topos, "usx", await response.text()); // fetch.bible serves USX
     if (!book) throw new Error("The downloaded book couldn't be read");
     return { books: [book], skipped: [] };
   }
