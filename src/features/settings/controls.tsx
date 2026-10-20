@@ -11,14 +11,14 @@ import { FontPicker, useVerseFont } from "./FontPicker";
 // the practice area
 
 export function Row({ title, description, children, htmlFor }: { title: string; description?: ReactNode; children: ReactNode; htmlFor?: string }) {
+  // With a control to label, the title and description both toggle it
+  const Text = htmlFor ? Label : "div";
   return (
     <div className="flex items-center justify-between gap-6 py-3">
-      <div className="space-y-0.5">
-        <Label htmlFor={htmlFor} className="text-sm">
-          {title}
-        </Label>
-        {description && <p className="text-xs leading-snug text-muted-foreground">{description}</p>}
-      </div>
+      <Text htmlFor={htmlFor} className={cn("block space-y-0.5", htmlFor && "cursor-pointer")}>
+        <span className="block text-sm font-medium">{title}</span>
+        {description && <span className="block text-xs leading-snug font-normal text-muted-foreground">{description}</span>}
+      </Text>
       <div className="shrink-0">{children}</div>
     </div>
   );

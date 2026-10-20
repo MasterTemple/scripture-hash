@@ -130,7 +130,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
                 value={guess.chapter}
                 inputMode="numeric"
                 pattern="[0-9]*"
-                placeholder="Ch"
+                placeholder="C"
                 aria-label="Chapter"
                 readOnly={!!result}
                 className={cn("h-12 w-16 text-center text-lg font-medium tabular-nums", partClass(result?.chapter))}
@@ -147,7 +147,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
                 value={guess.verse}
                 inputMode="numeric"
                 pattern="[0-9]*"
-                placeholder="Vs"
+                placeholder="V"
                 aria-label="Verse"
                 readOnly={!!result}
                 className={cn("h-12 w-16 text-center text-lg font-medium tabular-nums", partClass(result?.verse))}
