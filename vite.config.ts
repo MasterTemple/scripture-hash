@@ -4,6 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // Relative URLs, so the build works under any path (GitHub Pages serves it at /ScriptureHash/)
+  base: "./",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },

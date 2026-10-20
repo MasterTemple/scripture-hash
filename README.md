@@ -2,6 +2,8 @@
 
 Memorize Bible verses *and* where they are.
 
+**Use it: [mastertemple.github.io/ScriptureHash](https://mastertemple.github.io/ScriptureHash/)**
+
 - **Reference**: see a verse and name its book, chapter, and verse. Choose which parts you're asked for.
 - **Recite**: see a reference and type the verse, either each word's first letter or whole words. It works with phone keyboards and has hints, peeking, and word-by-word feedback. Type it in any font: the bundled ones, any of [Fontsource](https://fontsource.org)'s ~2,000 (searchable, each previewed in itself, and saved for offline use once chosen), or one installed on your device (Chrome and Edge on desktop).
 - **Read**: read through your selection, colored by how well you know each verse. Tap a verse to practice it.
@@ -28,4 +30,4 @@ npm test           # unit tests (parsing, grading, ordering)
 npm run build      # static site in dist/
 ```
 
-The build is a static site with no server or API keys, so it can be hosted anywhere (GitHub Pages, Netlify, Cloudflare Pages, …).
+The build is a static site with no server or API keys, and its URLs are relative, so it can be hosted under any path. Each push to `main` tests, builds, and deploys it to GitHub Pages (`.github/workflows/deploy.yml`).
