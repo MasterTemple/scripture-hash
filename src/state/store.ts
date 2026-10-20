@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
 import { BUILT_IN, DEFAULT_TRANSLATION } from "@/bible/translations";
 import type { Translation, VerseRef } from "@/bible/types";
 import { DEFAULT_FONT, type FontChoice } from "@/lib/fonts";
@@ -91,6 +91,49 @@ const STARTER: VerseSet[] = [
 
 export const MAX_HISTORY = 1000;
 
+/**
+ * localStorage, written a moment after the last change rather than on every one: the state
+ * holds the whole history, and serializing it on each keystroke or toggle made the page lag.
+ * Pending writes are flushed when the page is hidden or closed.
+ */
+function lazyStorage<S>(delay = 400): PersistStorage<S> {
+  let pending: { name: string; value: StorageValue<S> } | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const flush = () => {
+    clearTimeout(timer);
+    if (!pending) return;
+    try {
+      localStorage.setItem(pending.name, JSON.stringify(pending.value));
+    } catch {
+      // Full or blocked storage: keep going without saving
+    }
+    pending = null;
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flush());
+  }
+  return {
+    getItem: (name) => {
+      try {
+        const raw = localStorage.getItem(name);
+        return raw ? (JSON.parse(raw) as StorageValue<S>) : null;
+      } catch {
+        return null;
+      }
+    },
+    setItem: (name, value) => {
+      pending = { name, value };
+      clearTimeout(timer);
+      timer = setTimeout(flush, delay);
+    },
+    removeItem: (name) => {
+      pending = null;
+      localStorage.removeItem(name);
+    },
+  };
+}
+
 export const useApp = create<State>()(
   persist(
     (set, get) => ({
@@ -160,6 +203,7 @@ export const useApp = create<State>()(
     {
       name: "scripture-hash",
       version: 1,
+      storage: lazyStorage(),
       // Settings added since a visit keep their defaults
       merge: (saved, current) => {
         const s = (saved ?? {}) as Partial<State>;

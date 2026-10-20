@@ -1,5 +1,5 @@
 import { BookOpenIcon, ChevronDownIcon, HistoryIcon, KeyboardIcon, ListIcon, LocateIcon, SettingsIcon, SparklesIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, SheetContent } from "@/components/ui/overlays";
@@ -16,6 +16,7 @@ import { TabSettings } from "@/features/settings/TabSettings";
 import { TranslationDialog } from "@/features/translations/TranslationDialog";
 import { usePrefetch, useKeepCurrent, useSelection, useSession } from "@/state/session";
 import { useApp, useTranslation, type Mode } from "@/state/store";
+import type { VerseRef } from "@/bible/types";
 
 function useTheme() {
   const theme = useApp((s) => s.settings.theme);
@@ -81,11 +82,11 @@ export default function App() {
   const translation = useTranslation();
   const activeSetId = useApp((s) => s.activeSetId);
   const selection = useSelection();
-  const current = useSession((s) => s.current);
-  const asked = useSession((s) => s.asked);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [translationsOpen, setTranslationsOpen] = useState(false);
+  const closeLeft = useCallback(() => setLeftOpen(false), []);
+  const closeRight = useCallback(() => setRightOpen(false), []);
 
   // On phones and tablets: swipe right for the verse list, left for history; swipe back to close
   useDocumentSwipe((direction) => {
@@ -121,7 +122,7 @@ export default function App() {
                 </Button>
               </DialogTrigger>
               <SheetContent side="left" title="Verses">
-                <SelectionPanel onPicked={() => setLeftOpen(false)} />
+                <SelectionPanel onPicked={closeLeft} />
               </SheetContent>
             </Dialog>
             <Logo />
@@ -156,7 +157,7 @@ export default function App() {
                 </Button>
               </DialogTrigger>
               <SheetContent side="right" title="History">
-                <HistoryPanel onPicked={() => setRightOpen(false)} />
+                <HistoryPanel onPicked={closeRight} />
               </SheetContent>
             </Dialog>
           </div>
@@ -176,17 +177,13 @@ export default function App() {
                 <>
                   <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                     <SelectionSummary />
-                    {mode !== "read" && <RoundProgress asked={asked.size} total={selection.pool.length} />}
+                    {mode !== "read" && <RoundProgress total={selection.pool.length} />}
                   </div>
                   {mode === "read" ? (
                     <ReadView passages={selection.passages} />
-                  ) : current ? (
-                    mode === "reference" ? (
-                      <ReferenceDrill verse={current} pool={selection.pool} />
-                    ) : (
-                      <ReciteDrill verse={current} pool={selection.pool} />
-                    )
-                  ) : null}
+                  ) : (
+                    <Drill mode={mode} pool={selection.pool} />
+                  )}
                   <TabSettings />
                 </>
               )}
@@ -203,7 +200,15 @@ export default function App() {
   );
 }
 
-function RoundProgress({ asked, total }: { asked: number; total: number }) {
+/** The verse being practiced; its own component, so moving between verses re-renders only it */
+function Drill({ mode, pool }: { mode: Mode; pool: VerseRef[] }) {
+  const current = useSession((s) => s.current);
+  if (!current) return null;
+  return mode === "reference" ? <ReferenceDrill verse={current} pool={pool} /> : <ReciteDrill verse={current} pool={pool} />;
+}
+
+function RoundProgress({ total }: { total: number }) {
+  const asked = useSession((s) => s.asked.size);
   const order = useApp((s) => s.settings.order);
   if (order !== "shuffle" || total < 2) return null;
   return (

@@ -1,5 +1,5 @@
 import { CheckIcon, FlameIcon, HistoryIcon, KeyboardIcon, LocateIcon, Trash2Icon, XIcon } from "lucide-react";
-import { useMemo } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { formatRef } from "@/bible/topos";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/overlays";
@@ -9,7 +9,11 @@ import { useApp, type Attempt } from "@/state/store";
 
 const startOfToday = () => new Date().setHours(0, 0, 0, 0);
 
-export function HistoryPanel({ onPicked }: { onPicked?: () => void }) {
+/** Answers shown at first, and added by "Show more" */
+const PAGE = 50;
+
+/** Memoized: it only changes with its own data, not with the rest of the page */
+export const HistoryPanel = memo(function HistoryPanel({ onPicked }: { onPicked?: () => void }) {
   const history = useApp((s) => s.history);
   const clearHistory = useApp((s) => s.clearHistory);
   const resetProgress = useApp((s) => s.resetProgress);
@@ -33,11 +37,15 @@ export function HistoryPanel({ onPicked }: { onPicked?: () => void }) {
     return { today: today.length, accuracy, streak, best };
   }, [history]);
 
-  const pick = (a: Attempt) => {
-    setCurrent(a.verse);
-    setMode(a.mode);
-    onPicked?.();
-  };
+  const [shown, setShown] = useState(PAGE);
+  const pick = useCallback(
+    (a: Attempt) => {
+      setCurrent(a.verse);
+      setMode(a.mode);
+      onPicked?.();
+    },
+    [setCurrent, setMode, onPicked],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -87,38 +95,52 @@ export function HistoryPanel({ onPicked }: { onPicked?: () => void }) {
             Your answers will show up here.
           </div>
         ) : (
-          <ul className="divide-y">
-            {history.slice(0, 200).map((a) => (
-              <li key={a.id}>
-                <button className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/60" onClick={() => pick(a)} title="Practice this verse again">
-                  <span
-                    className={cn(
-                      "flex size-6 shrink-0 items-center justify-center rounded-full",
-                      a.correct ? "bg-success-soft text-success" : a.score > 0 ? "bg-muted text-warning" : "bg-destructive-soft text-destructive",
-                    )}
-                  >
-                    {a.correct ? <CheckIcon className="size-3.5" /> : a.score > 0 ? <span className="text-[9px] font-bold">{Math.round(a.score * 100)}</span> : <XIcon className="size-3.5" />}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 text-sm font-medium">
-                      <span className="truncate">{formatRef(a.verse)}</span>
-                      {a.mode === "recite" ? <KeyboardIcon className="size-3 shrink-0 text-muted-foreground" /> : <LocateIcon className="size-3 shrink-0 text-muted-foreground" />}
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {!a.correct && a.answer && a.mode === "reference" ? `${a.answer} · ` : ""}
-                      {a.mode === "recite" && !a.correct ? `${percent(a.score)} · ` : ""}
-                      {a.translation} · {timeAgo(a.at)}
-                    </div>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="divide-y">
+              {history.slice(0, shown).map((a) => (
+                <HistoryRow key={a.id} attempt={a} onPick={pick} />
+              ))}
+            </ul>
+            {history.length > shown && (
+              <button className="w-full border-t px-4 py-3 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground" onClick={() => setShown((n) => n + PAGE)}>
+                Show more ({history.length - shown} older)
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
   );
-}
+});
+
+/** One answer; memoized, and skipped by the browser while scrolled out of view */
+const HistoryRow = memo(function HistoryRow({ attempt: a, onPick }: { attempt: Attempt; onPick: (a: Attempt) => void }) {
+  return (
+    <li className="[contain-intrinsic-size:auto_56px] [content-visibility:auto]">
+      <button className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/60" onClick={() => onPick(a)} title="Practice this verse again">
+        <span
+          className={cn(
+            "flex size-6 shrink-0 items-center justify-center rounded-full",
+            a.correct ? "bg-success-soft text-success" : a.score > 0 ? "bg-muted text-warning" : "bg-destructive-soft text-destructive",
+          )}
+        >
+          {a.correct ? <CheckIcon className="size-3.5" /> : a.score > 0 ? <span className="text-[9px] font-bold">{Math.round(a.score * 100)}</span> : <XIcon className="size-3.5" />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 text-sm font-medium">
+            <span className="truncate">{formatRef(a.verse)}</span>
+            {a.mode === "recite" ? <KeyboardIcon className="size-3 shrink-0 text-muted-foreground" /> : <LocateIcon className="size-3 shrink-0 text-muted-foreground" />}
+          </div>
+          <div className="truncate text-xs text-muted-foreground">
+            {!a.correct && a.answer && a.mode === "reference" ? `${a.answer} · ` : ""}
+            {a.mode === "recite" && !a.correct ? `${percent(a.score)} · ` : ""}
+            {a.translation} · {timeAgo(a.at)}
+          </div>
+        </div>
+      </button>
+    </li>
+  );
+});
 
 function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (

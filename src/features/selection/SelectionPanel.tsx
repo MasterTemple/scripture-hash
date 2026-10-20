@@ -1,5 +1,5 @@
 import { CheckIcon, ChevronsUpDownIcon, CrosshairIcon, ListPlusIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { memo, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { completeReference } from "@/bible/topos";
 import { verseKey } from "@/bible/types";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { useActiveSet, useApp } from "@/state/store";
 
 const EXAMPLES = ["Romans 8", "Psalm 1; 23", "Ephesians 2:1-10", "John 1:1-18", "James", "1 Cor 13:4-7"];
 
-export function SelectionPanel({ onPicked }: { onPicked?: () => void }) {
+/** Memoized: it only changes with its own data, not with the rest of the page */
+export const SelectionPanel = memo(function SelectionPanel({ onPicked }: { onPicked?: () => void }) {
   const active = useActiveSet();
   const updateSet = useApp((s) => s.updateSet);
   const { passages, verses } = useSelection();
@@ -105,7 +106,7 @@ export function SelectionPanel({ onPicked }: { onPicked?: () => void }) {
       </div>
     </div>
   );
-}
+});
 
 function SetPicker() {
   const sets = useApp((s) => s.sets);
