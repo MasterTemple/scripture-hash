@@ -1,6 +1,6 @@
 # Scripture Hash
 
-Memorize Bible verses *and* where they are.
+Memorize Bible verses _and_ where they are.
 
 **Use it: [mastertemple.github.io/ScriptureHash](https://mastertemple.github.io/ScriptureHash/)**
 
@@ -9,6 +9,8 @@ Memorize Bible verses *and* where they are.
 - **Read**: read through your selection, colored by how well you know each verse. Tap a verse to practice it.
 
 Write what to learn the way you'd write it anywhere, e.g. `Rom 8:28-39; Ps 23`, `John 1:1-18`, or a whole book like `James`. You can keep several named verse sets. Verses come up shuffled (each once per round), in order, or weakest first, and the app tracks your progress per verse.
+
+[![Typing Whole Words](./docs/whole-word.png)](https://mastertemple.github.io/ScriptureHash/)
 
 ## Bibles
 
