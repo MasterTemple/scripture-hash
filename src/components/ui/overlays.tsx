@@ -65,11 +65,13 @@ export function SheetContent({
           side === "left" ? "left-0 border-r data-[state=open]:animate-[sheet-left_0.25s_ease-out]" : "right-0 border-l data-[state=open]:animate-[sheet-right_0.25s_ease-out]",
           className,
         )}
+        // Opening by a swipe or a tap shouldn't focus a control (or pop up a keyboard)
+        onOpenAutoFocus={(e) => e.preventDefault()}
         {...props}
       >
         <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
         <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
-        <DialogPrimitive.Close className="absolute top-3 right-3 z-10 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
+        <DialogPrimitive.Close className="absolute top-3.5 right-3 z-10 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
           <XIcon className="size-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

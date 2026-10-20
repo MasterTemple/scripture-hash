@@ -14,7 +14,8 @@ import { Card, VerseStatus } from "./common";
 export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[] }) {
   const translation = useTranslation();
   const style = useApp((s) => s.settings.reciteStyle);
-  const hints = useApp((s) => s.settings.firstLetterHints);
+  // First-letter hints would give every answer away when typing first letters
+  const hints = useApp((s) => s.settings.firstLetterHints && s.settings.reciteStyle === "words");
   const autoAdvance = useApp((s) => s.settings.autoAdvance);
   const record = useApp((s) => s.record);
   const markMissing = useSession((s) => s.markMissing);
@@ -114,6 +115,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
                 ref={inputRef}
                 value={input}
                 aria-label="Type the verse"
+                data-swipe
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"

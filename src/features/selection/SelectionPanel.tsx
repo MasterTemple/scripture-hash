@@ -27,7 +27,8 @@ export function SelectionPanel({ onPicked }: { onPicked?: () => void }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-2 border-b px-4 py-3">
+      {/* Room for the slide-out panel's close button, below the desktop width */}
+      <div className="flex items-center gap-2 border-b py-3 pr-12 pl-4 lg:pr-4">
         <SetPicker />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">

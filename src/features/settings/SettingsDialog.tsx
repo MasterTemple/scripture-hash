@@ -80,9 +80,11 @@ export function SettingsDialog() {
             ]}
           />
         </Row>
-        <Row title="First-letter hints" description="Show each hidden word's first letter." htmlFor="hints">
-          <Switch id="hints" checked={settings.firstLetterHints} onCheckedChange={(firstLetterHints) => update({ firstLetterHints })} />
-        </Row>
+        {settings.reciteStyle === "words" && (
+          <Row title="First-letter hints" description="Show each hidden word's first letter." htmlFor="hints">
+            <Switch id="hints" checked={settings.firstLetterHints} onCheckedChange={(firstLetterHints) => update({ firstLetterHints })} />
+          </Row>
+        )}
       </Section>
 
       <Section title="Practice">

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, SheetContent } from "@/components/ui/overlays";
 import { Tip, TooltipProvider } from "@/components/ui/primitives";
 import { Segmented } from "@/components/ui/segmented";
+import { useDocumentSwipe } from "@/lib/swipe";
 import { HistoryPanel } from "@/features/history/HistoryPanel";
 import { ReadView } from "@/features/practice/ReadView";
 import { ReciteDrill } from "@/features/practice/ReciteDrill";
@@ -84,6 +85,15 @@ export default function App() {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [translationsOpen, setTranslationsOpen] = useState(false);
+
+  // On phones and tablets: swipe right for the verse list, left for history; swipe back to close
+  useDocumentSwipe((direction) => {
+    if (leftOpen) return direction === "left" && setLeftOpen(false);
+    if (rightOpen) return direction === "right" && setRightOpen(false);
+    if (document.querySelector("[role=dialog]")) return; // settings or translations are open
+    if (direction === "right" && !matchMedia("(min-width: 64rem)").matches) setLeftOpen(true);
+    if (direction === "left" && !matchMedia("(min-width: 80rem)").matches) setRightOpen(true);
+  });
 
   useKeepCurrent(selection.pool);
   usePrefetch(selection.verses);
