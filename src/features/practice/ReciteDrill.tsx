@@ -8,7 +8,7 @@ import { cn, percent } from "@/lib/utils";
 import { progress, words, type WordState } from "@/practice/recite";
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
-import { Card, VerseStatus } from "./common";
+import { Card, focusForAnswer, VerseStatus } from "./common";
 
 /** Shows a reference; the verse is to be typed out, word by word or by first letters */
 export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[] }) {
@@ -51,7 +51,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   }, [verse, style]);
 
   useEffect(() => {
-    if (state.status === "ready") inputRef.current?.focus({ preventScroll: true });
+    if (state.status === "ready") focusForAnswer(inputRef.current);
   }, [state.status, verse]);
 
   // Grade once the last word is in
@@ -81,7 +81,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   const helped = p.states.filter((s) => s === "revealed").length;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div data-drill className="flex flex-col gap-5">
       <div className="text-center">
         <h2 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">{reference}</h2>
         <p className="mt-1 text-sm text-muted-foreground">

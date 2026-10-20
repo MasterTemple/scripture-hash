@@ -71,3 +71,15 @@ export function Scripture({ children, className }: { children: ReactNode; classN
     </p>
   );
 }
+
+/**
+ * Focuses a field for the next answer, unless something else has the keyboard: a field
+ * outside the practice area (like the verse list being edited) or an open panel or dialog.
+ */
+export function focusForAnswer(el: HTMLElement | null) {
+  if (!el || document.querySelector("[role=dialog]")) return;
+  const active = document.activeElement;
+  const typingElsewhere =
+    active instanceof HTMLElement && active.matches("input, textarea, select, [contenteditable=true]") && !active.closest("[data-drill]");
+  if (!typingElsewhere) el.focus({ preventScroll: true });
+}

@@ -9,7 +9,7 @@ import { grade, partsToAsk, type Grade, type Guess, type PartResult } from "@/pr
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { BookInput } from "./BookInput";
-import { Card, Scripture, VerseStatus } from "./common";
+import { Card, focusForAnswer, Scripture, VerseStatus } from "./common";
 
 /** A part filled in for you: still a field, but not one to type in (and not dimmed) */
 const GIVEN = "text-lg font-medium disabled:cursor-default disabled:opacity-100 disabled:bg-muted disabled:text-foreground";
@@ -49,13 +49,13 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
 
   const firstAsked = () => (ask.book ? bookRef : ask.chapter ? chapterRef : verseRef).current;
   useEffect(() => {
-    if (state.status === "ready" && !result) firstAsked()?.focus({ preventScroll: true });
+    if (state.status === "ready" && !result) focusForAnswer(firstAsked());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status, verse, result, ask]);
 
   useEffect(() => {
     if (!result) return;
-    nextRef.current?.focus({ preventScroll: true });
+    focusForAnswer(nextRef.current);
     if (result.correct && autoAdvance) {
       const timer = setTimeout(() => advance(pool), 1100);
       return () => clearTimeout(timer);
@@ -95,7 +95,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
   const verseLabel = span ? `${span[0]}–${span[1]}` : String(verse.verse);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div data-drill className="flex flex-col gap-5">
       <Card className="relative overflow-hidden px-6 py-8 sm:px-10 sm:py-12">
         {state.status === "ready" ? (
           <div key={`${verse.bookId}.${verse.chapter}.${verse.verse}`} className="animate-fade-up">
