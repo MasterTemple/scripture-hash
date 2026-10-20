@@ -22,17 +22,23 @@ export interface Grade {
 
 /**
  * Grades a guess at a verse's reference. Parts not asked for are `given`. `span` is the
- * verses printed together with this one, any of which is right.
+ * verses printed together with this one, any of which is right, and `chapters` the chapters
+ * they start and end in when they cross one.
  */
-export function grade(target: VerseRef, guess: Guess, ask: Settings["ask"], span?: [number, number]): Grade {
+export function grade(target: VerseRef, guess: Guess, ask: Settings["ask"], span?: [number, number], chapters?: [number, number]): Grade {
   const bookId = ask.book ? findBook(guess.book) : target.bookId;
   const chapter = ask.chapter ? Number.parseInt(guess.chapter, 10) : target.chapter;
   const verse = ask.verse ? Number.parseInt(guess.verse, 10) : target.verse;
   const [first, last] = span ?? [target.verse, target.verse];
+  const [firstChapter, lastChapter] = chapters ?? [target.chapter, target.chapter];
+  const chapterRight = chapter >= firstChapter && chapter <= lastChapter;
+  // The verse is judged in the chapter guessed when that's one the span is in
+  const at = (c: number, v: number) => c * 1000 + v;
+  const place = at(chapterRight ? chapter : target.chapter, verse);
 
   const book: PartResult = !ask.book ? "given" : bookId === target.bookId ? "correct" : "wrong";
-  const ch: PartResult = !ask.chapter ? "given" : chapter === target.chapter ? "correct" : "wrong";
-  const vs: PartResult = !ask.verse ? "given" : verse >= first && verse <= last ? "correct" : "wrong";
+  const ch: PartResult = !ask.chapter ? "given" : chapterRight ? "correct" : "wrong";
+  const vs: PartResult = !ask.verse ? "given" : place >= at(firstChapter, first) && place <= at(lastChapter, last) ? "correct" : "wrong";
 
   const asked = [book, ch, vs].filter((p) => p !== "given");
   const right = asked.filter((p) => p === "correct").length;

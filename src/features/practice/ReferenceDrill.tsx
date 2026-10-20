@@ -1,7 +1,7 @@
 import { ArrowRightIcon, CheckIcon, EyeIcon, SkipForwardIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
-import { bookById } from "@/bible/topos";
-import type { VerseRef } from "@/bible/types";
+import { bookById, formatPrinted } from "@/bible/topos";
+import { spanLabel, type VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
 import { Input, Kbd } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,8 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
   const verseRef = useRef<HTMLInputElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   const book = bookById(verse.bookId);
-  const span = state.status === "ready" ? state.verse.span : undefined;
+  const printed = state.status === "ready" ? state.verse : undefined;
+  const span = printed && spanLabel(printed);
 
   // A new verse, or other parts to ask for: clear the answer
   const asking = `${ask.book}${ask.chapter}${ask.verse}`;
@@ -69,7 +70,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
       empty.current?.focus();
       return;
     }
-    const g = grade(verse, guess, ask, span);
+    const g = grade(verse, guess, ask, printed?.span, printed?.chapters);
     setResult(g);
     record({ mode: "reference", verse, translation: translation.abbreviation, correct: g.correct, score: g.score, answer: g.answer });
   };
@@ -92,7 +93,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
   };
 
   const skip = () => advance(pool);
-  const verseLabel = span ? `${span[0]}–${span[1]}` : String(verse.verse);
+  const verseLabel = span ?? String(verse.verse);
 
   return (
     <div data-drill className="flex flex-col gap-5">
@@ -100,7 +101,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
         {state.status === "ready" ? (
           <div key={`${verse.bookId}.${verse.chapter}.${verse.verse}`} className="animate-fade-up">
             <Scripture>{state.verse.text}</Scripture>
-            {span && <p className="mt-4 text-xs text-muted-foreground">The {translation.abbreviation} prints verses {span[0]}–{span[1]} together; either verse counts.</p>}
+            {span && <p className="mt-4 text-xs text-muted-foreground">The {translation.abbreviation} prints verses {span} together; either verse counts.</p>}
           </div>
         ) : (
           <VerseStatus state={state} translation={translation} onRetry={retry} onSkip={() => { if (state.status === "missing") markMissing(verse); skip(); }} />
@@ -151,7 +152,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
                 onKeyDown={onKey(null)}
               />
             ) : (
-              <Input disabled value={verseLabel} aria-label="Verse" className={cn(GIVEN, "h-12 text-center tabular-nums", span ? "w-20" : "w-16")} />
+              <Input disabled value={verseLabel} aria-label="Verse" className={cn(GIVEN, "h-12 text-center tabular-nums", printed?.chapters ? "w-28" : span ? "w-20" : "w-16")} />
             )}
           </div>
         </div>
@@ -173,7 +174,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
               <span className="font-medium">
                 {result.correct ? "Correct — " : result.revealed ? "It's " : "It was "}
                 <span className="font-semibold">
-                  {book.name} {verse.chapter}:{verseLabel}
+                  {formatPrinted(verse, printed)}
                 </span>
                 {!result.correct && !result.revealed && <span className="opacity-80"> (you said {result.answer})</span>}
               </span>

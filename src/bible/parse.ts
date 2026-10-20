@@ -25,16 +25,26 @@ export function readBook(lx: Logoxide, topos: Topos, markup: Markup, source: str
     for (const v of book.verses()) {
       // A verse printed in parts ("20a", "20b") is read whole once, from its first part
       if (v.part > 0 && verses[`${v.chapter}:${v.verse}`]) continue;
-      // Verses printed together ("4-5") share their text
-      const last = v.lastChapter === v.chapter ? v.last : v.verse;
-      const ref = last > v.verse ? `${osis}.${v.chapter}.${v.verse}-${osis}.${v.chapter}.${last}` : `${osis}.${v.chapter}.${v.verse}`;
+      // Verses printed together ("4-5", or across chapters "1:31-2:1") share their text
+      const lastChapter = Math.max(v.lastChapter, v.chapter);
+      const across = lastChapter > v.chapter;
+      const last = across ? v.last : Math.max(v.last, v.verse);
+      const together = across || last > v.verse;
+      const ref = together ? `${osis}.${v.chapter}.${v.verse}-${osis}.${lastChapter}.${last}` : `${osis}.${v.chapter}.${v.verse}`;
       const passage = topos.parse(ref, BookStyle.Name);
       if (!passage) continue;
       const text = clean(book.text(passage, options).join(" "));
       if (!text) continue;
-      for (let n = v.verse; n <= last; n++) {
-        verses[`${v.chapter}:${n}`] = last > v.verse ? { text, span: [v.verse, last] } : { text };
+      const entry: VerseText = !together ? { text } : across ? { text, span: [v.verse, last], chapters: [v.chapter, lastChapter] } : { text, span: [v.verse, last] };
+      // Across chapters, the verses between are topos's (the default versification's), which
+      // may not count to the translation's own first or last verse
+      const covered = across
+        ? topos.verses(passage)
+        : Array.from({ length: last - v.verse + 1 }, (_, i) => ({ chapter: v.chapter, verse: v.verse + i }));
+      for (const end of [{ chapter: v.chapter, verse: v.verse }, { chapter: lastChapter, verse: last }]) {
+        if (!covered.some((c) => c.chapter === end.chapter && c.verse === end.verse)) covered.push(end);
       }
+      for (const c of covered) verses[`${c.chapter}:${c.verse}`] = entry;
     }
     return { bookId, verses };
   } finally {

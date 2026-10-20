@@ -32,6 +32,16 @@ describe("readBook", () => {
     expect(book.verses["1:2"]).toEqual({ text: "Two begins, and ends." });
     expect(Object.keys(book.verses)).toEqual(["1:1", "1:2", "1:3"]);
   });
+
+  it("shares the text of verses printed together, within and across chapters", () => {
+    const usfm = "\\id GEN\n\\c 1\n\\p\n\\v 1 One.\n\\v 2-3 Two and three.\n\\v 31-2:1 The end and the start.\n\\c 2\n\\p\n\\v 2 Two.\n";
+    const book = readBook(lx, topos, "usfm", usfm)!;
+    expect(book.verses["1:3"]).toEqual({ text: "Two and three.", span: [2, 3] });
+    const bridge = { text: "The end and the start.", span: [31, 1], chapters: [1, 2] };
+    expect(book.verses["1:31"]).toEqual(bridge);
+    expect(book.verses["2:1"]).toEqual(bridge);
+    expect(book.verses["2:2"]).toEqual({ text: "Two." });
+  });
 });
 
 describe("files", () => {

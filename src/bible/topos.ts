@@ -1,5 +1,5 @@
 import { BookStyle, initialized, OffsetUnit, Topos, type BookInfo } from "topos-bible";
-import type { SelectedPassage, VerseRef } from "./types";
+import { spanLabel, type SelectedPassage, type VerseRef, type VerseText } from "./types";
 
 let instance: Topos | null = null;
 let books: BookInfo[] = [];
@@ -63,6 +63,14 @@ export function verseCount(bookId: number, chapter: number): number {
 export function formatRef(v: VerseRef, style: "name" | "abbreviation" = "name"): string {
   const book = bookById(v.bookId);
   return `${style === "name" ? book.name : book.abbreviation} ${v.chapter}:${v.verse}`;
+}
+
+/** A verse's reference as the translation prints it: "John 3:4–5" when verses 4 and 5 are printed together */
+export function formatPrinted(v: VerseRef, printed?: VerseText): string {
+  const span = printed && spanLabel(printed);
+  if (!span) return formatRef(v);
+  const book = bookById(v.bookId).name;
+  return printed.chapters ? `${book} ${span}` : `${book} ${v.chapter}:${span}`;
 }
 
 /** Writes a run of verses compactly: "Romans 8:28-30", "John 3:16; 4:1" */

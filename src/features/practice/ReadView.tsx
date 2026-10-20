@@ -2,7 +2,7 @@ import { BookOpenIcon, Loader2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadBook } from "@/bible/library";
 import { bookById } from "@/bible/topos";
-import { verseKey, type BookText, type SelectedPassage, type Translation } from "@/bible/types";
+import { spanLabel, verseKey, type BookText, type SelectedPassage, type Translation } from "@/bible/types";
 import { cn } from "@/lib/utils";
 import { mastery } from "@/practice/queue";
 import { useSession } from "@/state/session";
@@ -74,7 +74,7 @@ function PassageText({ passage }: { passage: SelectedPassage }) {
             const newChapter = v.chapter !== lastChapter;
             lastChapter = v.chapter;
             // Verses printed together are shown once
-            const spanKey = entry?.span ? `${v.chapter}:${entry.span[0]}` : "";
+            const spanKey = entry?.span ? `${entry.chapters?.[0] ?? v.chapter}:${entry.span[0]}` : "";
             if (spanKey && spanKey === lastSpan) return null;
             lastSpan = spanKey;
             const m = mastery(stats[verseKey(v)]);
@@ -91,8 +91,12 @@ function PassageText({ passage }: { passage: SelectedPassage }) {
                   }}
                 >
                   <sup className={cn("mr-1 font-sans text-[0.62em] font-semibold", seen ? (m >= 0.75 ? "text-success" : m >= 0.45 ? "text-warning" : "text-destructive") : "text-muted-foreground")}>
-                    {newChapter && passage.verses.some((x) => x.chapter !== v.chapter) ? `${v.chapter}:` : ""}
-                    {entry?.span ? `${entry.span[0]}–${entry.span[1]}` : v.verse}
+                    {entry?.chapters ? spanLabel(entry) : (
+                      <>
+                        {newChapter && passage.verses.some((x) => x.chapter !== v.chapter) ? `${v.chapter}:` : ""}
+                        {(entry && spanLabel(entry)) ?? v.verse}
+                      </>
+                    )}
                   </sup>
                   {entry ? entry.text : <span className="text-sm text-muted-foreground italic">(not in the {translation.abbreviation})</span>}
                 </button>{" "}

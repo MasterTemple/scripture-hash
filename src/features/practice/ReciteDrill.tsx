@@ -1,6 +1,6 @@
 import { ArrowRightIcon, EyeIcon, KeyboardIcon, LightbulbIcon, RotateCcwIcon, SkipForwardIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { formatRef } from "@/bible/topos";
+import { formatPrinted } from "@/bible/topos";
 import type { VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
 import { Kbd, Progress } from "@/components/ui/primitives";
@@ -34,7 +34,6 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const text = state.status === "ready" ? state.verse.text : "";
-  const span = state.status === "ready" ? state.verse.span : undefined;
   const target = useMemo(() => words(text), [text]);
   const p = useMemo(() => progress(target, input, style, revealed), [target, input, style, revealed]);
   const correct = p.complete && p.score === 1 && !peeked;
@@ -91,7 +90,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   const keepFocus = { onMouseDown: (e: React.MouseEvent) => e.preventDefault() };
 
   const next = () => advance(pool);
-  const reference = `${formatRef(verse)}${span ? `–${span[1]}` : ""}`;
+  const reference = formatPrinted(verse, state.status === "ready" ? state.verse : undefined);
   const mistakes = p.states.filter((s) => s === "wrong").length;
   const helped = p.states.filter((s) => s === "revealed").length;
 

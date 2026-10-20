@@ -18,6 +18,15 @@ export interface VerseText {
   text: string;
   /** The first and last verse of a combined verse ("4-5"), when it is one */
   span?: [first: number, last: number];
+  /** The chapters a combined verse starts and ends in, when they differ ("1:31-2:1") */
+  chapters?: [first: number, last: number];
+}
+
+/** The verses printed with this one, "4–5" or "1:31–2:1"; `null` for a verse printed alone */
+export function spanLabel(t: VerseText): string | null {
+  if (!t.span) return null;
+  const [first, last] = t.span;
+  return t.chapters ? `${t.chapters[0]}:${first}–${t.chapters[1]}:${last}` : `${first}–${last}`;
 }
 
 /** Every verse of one book in one translation, keyed by `chapter:verse` */

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { loadTopos } from "@/bible/topos";
+import { formatPrinted, loadTopos } from "@/bible/topos";
 import { pickNext } from "@/practice/queue";
 import { progress, typedRuns, words } from "@/practice/recite";
 import { grade, partsToAsk } from "@/practice/reference";
@@ -22,6 +22,20 @@ describe("grade", () => {
   it("skips parts not asked and accepts combined verses", () => {
     const g = grade(john316, { book: "", chapter: "", verse: "17" }, { book: false, chapter: false, verse: true }, [16, 17]);
     expect([g.correct, g.book]).toEqual([true, "given"]);
+  });
+  it("accepts any verse of a combined verse across chapters", () => {
+    const gen21 = { bookId: 1, chapter: 2, verse: 1 };
+    const right = (chapter: string, verse: string) =>
+      grade(gen21, { book: "Gen", chapter, verse }, all, [31, 1], [1, 2]).correct;
+    expect([right("1", "31"), right("2", "1"), right("1", "30"), right("2", "2"), right("3", "1")]).toEqual([true, true, false, false, false]);
+  });
+});
+
+describe("formatPrinted", () => {
+  it("writes a verse as the translation prints it", () => {
+    expect(formatPrinted(john316)).toBe("John 3:16");
+    expect(formatPrinted(john316, { text: "", span: [15, 16] })).toBe("John 3:15–16");
+    expect(formatPrinted({ bookId: 1, chapter: 2, verse: 1 }, { text: "", span: [31, 1], chapters: [1, 2] })).toBe("Genesis 1:31–2:1");
   });
 });
 
