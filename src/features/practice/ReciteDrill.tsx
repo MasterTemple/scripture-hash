@@ -1,5 +1,5 @@
 import { ArrowRightIcon, EyeIcon, KeyboardIcon, LightbulbIcon, RotateCcwIcon, SkipForwardIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { formatRef } from "@/bible/topos";
 import type { VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
@@ -214,7 +214,8 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   );
 }
 
-function WordView({
+/** One word of the verse; memoized, since only a word or two change per keystroke */
+const WordView = memo(function WordView({
   text,
   state,
   typed,
@@ -231,8 +232,9 @@ function WordView({
   peek: boolean;
   caret: boolean;
 }) {
+  // No transitions or entrance animations here: on phones they read as lag
   const caretEl = caret ? <span className="ml-px inline-block h-[1.1em] w-0.5 translate-y-[0.18em] rounded-full bg-primary animate-caret" /> : null;
-  if (state === "correct") return <span className="animate-pop">{text} </span>;
+  if (state === "correct") return <span>{text} </span>;
   if (state === "wrong")
     return (
       <span className="text-destructive underline decoration-destructive/50 decoration-wavy underline-offset-4" title={`You typed “${typed}”`}>
@@ -240,36 +242,42 @@ function WordView({
       </span>
     );
   if (state === "revealed") return <span className="text-warning">{text} </span>;
-  if (state === "current" && partial) {
-    return (
-      <span>
-        <span className="text-primary">{partial}</span>
-        {caretEl}{" "}
-      </span>
-    );
-  }
-  // Hidden: a blank as wide as the word, or with its first letter as a hint
+
+  // Hidden: a blank as wide as the word, or with its first letter as a hint. The word being
+  // typed keeps its blank's width, with what's typed drawn over it.
   const first = text.search(/[\p{L}\p{N}]/u);
+  const typing = state === "current" && partial !== "";
+  const blank = (
+    <span
+      className={cn(
+        "rounded-[3px] select-none",
+        peek ? "text-muted-foreground/60" : "bg-muted text-transparent",
+        state === "current" && !peek && "bg-accent",
+        typing && !peek && "text-transparent",
+      )}
+    >
+      {hint && !peek && !typing && first >= 0 ? (
+        <>
+          {text.slice(0, first)}
+          <span className="text-muted-foreground">{text[first]}</span>
+          {text.slice(first + 1)}
+        </>
+      ) : (
+        text
+      )}
+    </span>
+  );
+  if (state !== "current") return <span>{blank} </span>;
+  // The blank and what's typed share one grid cell, so they line up and the blank sets the width
   return (
-    <span className="relative">
-      {state === "current" && <span className="absolute top-0 -left-0.5">{caretEl}</span>}
-      <span
-        className={cn(
-          "rounded-[3px] transition-colors select-none",
-          peek ? "text-muted-foreground/60" : "bg-muted text-transparent",
-          state === "current" && !peek && "bg-accent",
-        )}
-      >
-        {hint && !peek && first >= 0 ? (
-          <>
-            {text.slice(0, first)}
-            <span className="text-muted-foreground">{text[first]}</span>
-            {text.slice(first + 1)}
-          </>
-        ) : (
-          text
-        )}
+    <span>
+      <span className="inline-grid">
+        <span className="[grid-area:1/1]">{blank}</span>
+        <span className="pointer-events-none whitespace-nowrap [grid-area:1/1]">
+          {typing && !peek && <span className="text-primary">{partial}</span>}
+          {caretEl}
+        </span>
       </span>{" "}
     </span>
   );
-}
+});
