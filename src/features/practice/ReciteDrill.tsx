@@ -96,7 +96,8 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
               className="relative cursor-text"
               onClick={() => inputRef.current?.focus()}
             >
-              <p className="font-serif text-[1.3rem] leading-[1.9] sm:text-[1.5rem] sm:leading-[1.85]" aria-live="polite">
+              {/* No ligatures: Literata joins "Th" into one glyph, which would show a hidden letter with a hint */}
+              <p className="font-serif text-[1.3rem] leading-[1.9] [font-variant-ligatures:none] sm:text-[1.5rem] sm:leading-[1.85]" aria-live="polite">
                 {target.map((w, i) => (
                   <WordView
                     key={i}
