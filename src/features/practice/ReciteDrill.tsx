@@ -8,6 +8,7 @@ import { cn, percent } from "@/lib/utils";
 import { progress, words, type WordState } from "@/practice/recite";
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
+import { useVerseFont } from "@/features/settings/FontPicker";
 import { Card, focusForAnswer, VerseStatus } from "./common";
 
 /** Shows a reference; the verse is to be typed out, word by word or by first letters */
@@ -17,6 +18,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   // First-letter hints would give every answer away when typing first letters
   const hints = useApp((s) => s.settings.firstLetterHints && s.settings.reciteStyle === "words");
   const autoAdvance = useApp((s) => s.settings.autoAdvance);
+  const verseFont = useVerseFont();
   const record = useApp((s) => s.record);
   const markMissing = useSession((s) => s.markMissing);
   const [state, retry] = useVerseText(translation, verse);
@@ -97,7 +99,11 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
               onClick={() => inputRef.current?.focus()}
             >
               {/* No ligatures: Literata joins "Th" into one glyph, which would show a hidden letter with a hint */}
-              <p className="font-serif text-[1.3rem] leading-[1.9] [font-variant-ligatures:none] sm:text-[1.5rem] sm:leading-[1.85]" aria-live="polite">
+              <p
+                className="text-[1.3rem] leading-[1.9] [font-variant-ligatures:none] sm:text-[1.5rem] sm:leading-[1.85]"
+                style={{ fontFamily: verseFont }}
+                aria-live="polite"
+              >
                 {target.map((w, i) => (
                   <WordView
                     key={i}

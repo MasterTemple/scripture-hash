@@ -5,6 +5,7 @@ import { Label, Switch } from "@/components/ui/primitives";
 import { Segmented } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/state/session";
+import { FontPicker, useVerseFont } from "./FontPicker";
 import { useApp, type Order, type ReciteStyle, type Settings, type Theme } from "@/state/store";
 
 function Row({ title, description, children, htmlFor }: { title: string; description?: ReactNode; children: ReactNode; htmlFor?: string }) {
@@ -80,6 +81,18 @@ export function SettingsDialog() {
             ]}
           />
         </Row>
+        <div className="space-y-2 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label className="text-sm">Font</Label>
+              <p className="text-xs leading-snug text-muted-foreground">What the verse is typed in.</p>
+            </div>
+            <div className="w-48 shrink-0 sm:w-56">
+              <FontPicker />
+            </div>
+          </div>
+          <FontPreview />
+        </div>
         {settings.reciteStyle === "words" && (
           <Row title="First-letter hints" description="Show each hidden word's first letter." htmlFor="hints">
             <Switch id="hints" checked={settings.firstLetterHints} onCheckedChange={(firstLetterHints) => update({ firstLetterHints })} />
@@ -133,5 +146,19 @@ export function SettingsDialog() {
       </Section>
       <div className="h-2" />
     </DialogContent>
+  );
+}
+
+/** A line of verse in the chosen font, half typed, as reciting shows it */
+function FontPreview() {
+  const family = useVerseFont();
+  return (
+    <p className="rounded-lg bg-muted/60 px-3 py-2.5 text-lg leading-relaxed [font-variant-ligatures:none]" style={{ fontFamily: family }}>
+      For God so loved the{" "}
+      <span className="rounded-[3px] bg-accent text-transparent select-none">world,</span>{" "}
+      <span className="rounded-[3px] bg-muted text-transparent select-none">that</span>{" "}
+      <span className="rounded-[3px] bg-muted text-transparent select-none">He</span>{" "}
+      <span className="rounded-[3px] bg-muted text-transparent select-none">gave</span>
+    </p>
   );
 }

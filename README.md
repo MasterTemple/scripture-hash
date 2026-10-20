@@ -3,7 +3,7 @@
 Memorize Bible verses *and* where they are.
 
 - **Reference**: see a verse and name its book, chapter, and verse. Choose which parts you're asked for.
-- **Recite**: see a reference and type the verse, either each word's first letter or whole words. It works with phone keyboards and has hints, peeking, and word-by-word feedback.
+- **Recite**: see a reference and type the verse, either each word's first letter or whole words. It works with phone keyboards and has hints, peeking, and word-by-word feedback. Type it in any font: the bundled ones, any of [Fontsource](https://fontsource.org)'s ~2,000 (searchable, each previewed in itself, and saved for offline use once chosen), or one installed on your device (Chrome and Edge on desktop).
 - **Read**: read through your selection, colored by how well you know each verse. Tap a verse to practice it.
 
 Write what to learn the way you'd write it anywhere, e.g. `Rom 8:28-39; Ps 23`, `John 1:1-18`, or a whole book like `James`. You can keep several named verse sets. Verses come up shuffled (each once per round), in order, or weakest first, and the app tracks your progress per verse.

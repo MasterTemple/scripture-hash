@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { BUILT_IN, DEFAULT_TRANSLATION } from "@/bible/translations";
 import type { Translation, VerseRef } from "@/bible/types";
+import { DEFAULT_FONT, type FontChoice } from "@/lib/fonts";
 import { verseKey } from "@/bible/types";
 
 export type Mode = "reference" | "recite" | "read";
@@ -25,6 +26,8 @@ export interface Settings {
   firstLetterHints: boolean;
   /** Go to the next verse on its own after a correct answer */
   autoAdvance: boolean;
+  /** The font the verse is typed in */
+  reciteFont: FontChoice;
   theme: Theme;
 }
 
@@ -96,6 +99,7 @@ export const useApp = create<State>()(
         reciteStyle: "letters",
         firstLetterHints: false,
         autoAdvance: true,
+        reciteFont: DEFAULT_FONT,
         theme: "system",
       },
       history: [],
@@ -144,7 +148,15 @@ export const useApp = create<State>()(
       clearHistory: () => set({ history: [] }),
       resetProgress: () => set({ history: [], stats: {} }),
     }),
-    { name: "scripture-hash", version: 1 },
+    {
+      name: "scripture-hash",
+      version: 1,
+      // Settings added since a visit keep their defaults
+      merge: (saved, current) => {
+        const s = (saved ?? {}) as Partial<State>;
+        return { ...current, ...s, settings: { ...current.settings, ...s.settings } };
+      },
+    },
   ),
 );
 
