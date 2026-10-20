@@ -76,8 +76,19 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   const revealWord = () => {
     if (p.complete) return;
     setRevealed((r) => new Set(r).add(p.done));
+    // What was typed of the word goes with it, not on to the next one
+    if (style === "words") setInput((i) => i.replace(/\S+$/, ""));
     inputRef.current?.focus();
   };
+
+  const endPeek = () => {
+    if (!peeking) return;
+    setPeeking(false);
+    inputRef.current?.focus({ preventScroll: true });
+  };
+
+  /** Helper buttons leave the keyboard with the verse (on a phone, it stays open) */
+  const keepFocus = { onMouseDown: (e: React.MouseEvent) => e.preventDefault() };
 
   const next = () => advance(pool);
   const reference = `${formatRef(verse)}${span ? `–${span[1]}` : ""}`;
@@ -199,22 +210,24 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
                   setPeeking(true);
                   setPeeked(true);
                 }}
-                onPointerUp={() => setPeeking(false)}
-                onPointerLeave={() => setPeeking(false)}
+                onPointerUp={endPeek}
+                onPointerLeave={endPeek}
+                onPointerCancel={endPeek}
+                {...keepFocus}
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     setPeeking(true);
                     setPeeked(true);
                   }
                 }}
-                onKeyUp={() => setPeeking(false)}
+                onKeyUp={endPeek}
               >
                 <EyeIcon /> Hold to peek
               </Button>
-              <Button variant="ghost" onClick={revealWord}>
+              <Button variant="ghost" onClick={revealWord} {...keepFocus}>
                 <LightbulbIcon /> Next word
               </Button>
-              <Button variant="ghost" onClick={restart}>
+              <Button variant="ghost" onClick={restart} {...keepFocus}>
                 <RotateCcwIcon /> Restart <Kbd>Esc</Kbd>
               </Button>
               <Button variant="ghost" onClick={next}>
