@@ -5,7 +5,7 @@ import type { VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
 import { Kbd, Progress } from "@/components/ui/primitives";
 import { cn, percent } from "@/lib/utils";
-import { progress, typedRuns, words, type WordState } from "@/practice/recite";
+import { progress, typedRuns, wordParts, words, wordTyped, type WordState } from "@/practice/recite";
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { useVerseFont } from "@/features/settings/FontPicker";
@@ -18,6 +18,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   // First-letter hints would give every answer away when typing first letters
   const hints = useApp((s) => s.settings.firstLetterHints && s.settings.reciteStyle === "words");
   const liveTypos = useApp((s) => s.settings.liveTypos);
+  const punctuation = useApp((s) => s.settings.showPunctuation);
   const autoAdvance = useApp((s) => s.settings.autoAdvance);
   const verseFont = useVerseFont();
   const record = useApp((s) => s.record);
@@ -114,6 +115,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
                     partial={i === p.done ? p.partial : ""}
                     hint={hints}
                     liveTypos={liveTypos}
+                    punctuation={punctuation}
                     peek={peeking}
                     caret={focused && i === p.done}
                   />
@@ -233,6 +235,7 @@ const WordView = memo(function WordView({
   partial,
   hint,
   liveTypos,
+  punctuation,
   peek,
   caret,
 }: {
@@ -242,6 +245,7 @@ const WordView = memo(function WordView({
   partial: string;
   hint: boolean;
   liveTypos: boolean;
+  punctuation: boolean;
   peek: boolean;
   caret: boolean;
 }) {
@@ -256,28 +260,57 @@ const WordView = memo(function WordView({
     );
   if (state === "revealed") return <span className="text-warning">{text} </span>;
 
-  // Hidden: a blank as wide as the word, or with its first letter as a hint. The word being
-  // typed keeps its blank's width, with what's typed drawn over it.
-  const first = text.search(/[\p{L}\p{N}]/u);
   const typing = state === "current" && partial !== "";
+
+  // Typed in full and right: green until a space moves on to the next word
+  if (typing && !peek && wordTyped(text, partial)) {
+    return (
+      <span>
+        <span className="rounded-[3px] bg-success-soft text-success ring-1 ring-success">{text}</span>
+        {caretEl}{" "}
+      </span>
+    );
+  }
+
+  // Hidden: a blank as wide as the word, with its punctuation shown if asked, and its first
+  // letter as a hint if asked. The word being typed keeps its blank's width, with what's typed
+  // drawn over it.
+  const parts = punctuation ? wordParts(text) : [{ text, letters: true }];
+  let hinted = !(hint && !peek && !typing);
   const blank = (
-    <span
-      className={cn(
-        "rounded-[3px] select-none",
-        peek ? "text-muted-foreground/60" : "bg-muted text-transparent",
-        state === "current" && !peek && "bg-accent",
-        typing && !peek && "text-transparent",
-      )}
-    >
-      {hint && !peek && !typing && first >= 0 ? (
-        <>
-          {text.slice(0, first)}
-          <span className="text-muted-foreground">{text[first]}</span>
-          {text.slice(first + 1)}
-        </>
-      ) : (
-        text
-      )}
+    <span className="select-none">
+      {parts.map((part, i) => {
+        if (!part.letters) {
+          return (
+            <span key={i} className={peek ? "text-muted-foreground/60" : "text-muted-foreground"}>
+              {part.text}
+            </span>
+          );
+        }
+        // The first letter, as a hint (where the word's letters start)
+        const first = hinted ? -1 : part.text.search(/[\p{L}\p{N}]/u);
+        if (first >= 0) hinted = true;
+        return (
+          <span
+            key={i}
+            className={cn(
+              "rounded-[3px]",
+              peek ? "text-muted-foreground/60" : "bg-muted text-transparent",
+              state === "current" && !peek && "bg-accent",
+            )}
+          >
+            {first >= 0 ? (
+              <>
+                {part.text.slice(0, first)}
+                <span className="text-muted-foreground">{part.text[first]}</span>
+                {part.text.slice(first + 1)}
+              </>
+            ) : (
+              part.text
+            )}
+          </span>
+        );
+      })}
     </span>
   );
   if (state !== "current") return <span>{blank} </span>;

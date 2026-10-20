@@ -93,6 +93,9 @@ export function SettingsDialog() {
           </div>
           <FontPreview />
         </div>
+        <Row title="Show punctuation" description="Show hidden words' punctuation, so each blank is only letters to type." htmlFor="punctuation">
+          <Switch id="punctuation" checked={settings.showPunctuation} onCheckedChange={(showPunctuation) => update({ showPunctuation })} />
+        </Row>
         {settings.reciteStyle === "words" && (
           <>
             <Row title="Show typos as I type" description="Mark a wrong letter right away, not once the word is done." htmlFor="live-typos">

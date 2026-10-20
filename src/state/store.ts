@@ -26,6 +26,8 @@ export interface Settings {
   firstLetterHints: boolean;
   /** Reciting whole words: mark a wrong letter as it's typed, not once the word is done */
   liveTypos: boolean;
+  /** Reciting: show hidden words' punctuation, so a blank's width is all letters */
+  showPunctuation: boolean;
   /** Go to the next verse on its own after a correct answer */
   autoAdvance: boolean;
   /** The font the verse is typed in */
@@ -101,6 +103,7 @@ export const useApp = create<State>()(
         reciteStyle: "letters",
         firstLetterHints: false,
         liveTypos: false,
+        showPunctuation: true,
         autoAdvance: true,
         reciteFont: DEFAULT_FONT,
         theme: "system",

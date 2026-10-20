@@ -147,3 +147,16 @@ export function typedRuns(word: string, partial: string): TypedRun[] {
   if (runs.length && runs.every((r) => r.ok) && target.slice(i).every((c) => !isWordChar(c))) push(target.slice(i).join(""), true);
   return runs;
 }
+
+/** Whether every letter of a word is typed, rightly (it counts once a space follows) */
+export const wordTyped = (word: string, partial: string) => {
+  const bare = bareOf(word);
+  return bare !== "" && bareOf(partial) === bare;
+};
+
+/** A word split into its runs of letters and of punctuation: "“God’s" → “ God ’ s */
+export const wordParts = (word: string) =>
+  word
+    .split(/([\p{L}\p{N}]+)/u)
+    .filter(Boolean)
+    .map((text) => ({ text, letters: /[\p{L}\p{N}]/u.test(text) }));
