@@ -1,4 +1,4 @@
-import { BookStyle, LogoxideBook, type BookVerseText, type Logoxide, type Topos } from "logoxide";
+import { BookStyle, LogoxideBook, LogoxideErrorException, type BookVerseText, type Logoxide, type LogoxideBible, type Topos } from "logoxide";
 import type { BookText, VerseText } from "./types";
 
 export type Markup = "usx" | "usfm" | "osis";
@@ -67,59 +67,12 @@ export function bookText(topos: Topos, book: LogoxideBook): BookText | null {
   return { bookId, verses };
 }
 
-/** Which markup a file is in, by its name and first lines */
-export function markupOf(name: string, text: string): Markup | null {
-  const head = text.slice(0, 2000);
-  if (/<osis[\s>]/.test(head)) return "osis";
-  if (/<usx[\s>]/.test(head)) return "usx";
-  if (/^﻿?\s*\\id\s/.test(head)) return "usfm";
-  if (/\.(usfm|sfm)$/i.test(name)) return "usfm";
-  return null;
-}
-
-const DIV = /<div\b[^>]*?(\/?)>|<\/div\s*>/g;
-const BOOK_DIV = /\btype\s*=\s*["']book["']/;
-
 /**
- * An OSIS file's books, each as a file of its own: logoxide reads one book a file, and would
- * merge a whole Bible's into its first. A file of one book is returned as it is; `null` when
- * its books are milestones (`<div type="book" sID="…"/>`), which this doesn't split.
- */
-export function splitOsis(source: string): string[] | null {
-  const books: string[] = [];
-  let depth = 0;
-  let start = -1;
-  let bookDepth = -1;
-  for (const m of source.matchAll(DIV)) {
-    if (m[0].startsWith("</")) {
-      depth--;
-      if (depth === bookDepth) {
-        books.push(source.slice(start, m.index + m[0].length));
-        start = bookDepth = -1;
-      }
-    } else if (m[1]) {
-      if (start < 0 && BOOK_DIV.test(m[0])) return null;
-    } else {
-      if (start < 0 && BOOK_DIV.test(m[0])) {
-        start = m.index;
-        bookDepth = depth;
-      }
-      depth++;
-    }
-  }
-  const osisText = /<osisText\b[^>]*>/.exec(source);
-  if (books.length < 2 || !osisText) return [source];
-  // Each book keeps the work's opening and header (which name its versification)
-  const head = source.slice(0, osisText.index + osisText[0].length) + (/<header\b[\s\S]*?<\/header>/.exec(source)?.[0] ?? "");
-  return books.map((book) => `${head}${book}</osisText></osis>`);
-}
-
-const SCRIPTURE = /\.(usfm|sfm|usx|xml|txt)$/i;
-
-/**
- * Reads uploaded files, keeping the books it can read. A zip (a whole Bible, as eBible.org and
- * Paratext export them) is opened, and its books read whatever folders they're in.
- * `onProgress` hears how many files are read of how many.
+ * Reads uploaded files, keeping the books it can read. logoxide finds each file's format, opens
+ * a zip (a whole Bible, as eBible.org and Paratext export them) whatever folders its books are
+ * in, and cuts a whole-Bible OSIS file into its books. `skipped` names the uploaded files that
+ * gave no book; a zip's other files (copyright pages, front matter, signatures) aren't worth
+ * mentioning. `onProgress` hears how many books are read of how many.
  */
 export function readFiles(
   lx: Logoxide,
@@ -127,43 +80,39 @@ export function readFiles(
   files: { name: string; bytes: Uint8Array }[],
   onProgress?: (done: number, total: number) => void,
 ) {
-  const queue: { name: string; bytes: Uint8Array; inZip: boolean }[] = [];
-  for (const file of files) {
-    if (/\.zip$/i.test(file.name)) {
-      for (const inner of lx.unzip(file.bytes)) queue.push({ name: inner.path, bytes: inner.bytes, inZip: true });
-    } else {
-      queue.push({ ...file, inZip: false });
-    }
+  const uploaded = new Set(files.map((f) => f.name));
+  let bible: LogoxideBible;
+  try {
+    bible = lx.openBible(files.map((f) => ({ path: f.name, bytes: f.bytes })));
+  } catch (error) {
+    // Not one book in them
+    if (error instanceof LogoxideErrorException && error.value.tag === "NotFound") return { books: [], skipped: [...uploaded] };
+    throw error;
   }
-  const books: BookText[] = [];
-  const skipped: string[] = [];
-  const decoder = new TextDecoder();
-  const total = queue.length;
-  for (const [i, file] of queue.entries()) {
-    onProgress?.(i, total);
-    // A zip's other files (copyright pages, stylesheets, signatures) aren't worth mentioning
-    if (file.inZip && !SCRIPTURE.test(file.name)) continue;
-    const text = decoder.decode(file.bytes);
-    const markup = markupOf(file.name, text);
-    if (!markup) {
-      if (!file.inZip) skipped.push(file.name);
-      continue;
-    }
-    try {
-      const sources = markup === "osis" ? splitOsis(text) : [text];
-      let found = false;
-      for (const source of sources ?? []) {
-        const book = readBook(lx, topos, markup, source);
-        if (book && Object.keys(book.verses).length) {
-          books.push(book);
-          found = true;
+  try {
+    const skipped = bible.skipped().map((s) => s.path).filter((path) => uploaded.has(path));
+    const fileOf = new Map(bible.bookFiles().map((f) => [f.bookId, f.path]));
+    const ids = [...bible.books()];
+    const books: BookText[] = [];
+    for (const [i, id] of ids.entries()) {
+      onProgress?.(i, ids.length);
+      let text: BookText | null = null;
+      try {
+        const book = bible.book(id);
+        try {
+          text = bookText(topos, book);
+        } finally {
+          book.dispose();
         }
+      } catch {
+        // Passed over, as a book without verses is
       }
-      if (!found && !file.inZip) skipped.push(file.name); // a zip's front matter and glossary aren't books
-    } catch {
-      skipped.push(file.name);
+      if (text && Object.keys(text.verses).length) books.push(text);
+      else if (uploaded.has(fileOf.get(id) ?? "")) skipped.push(fileOf.get(id)!);
     }
+    onProgress?.(ids.length, ids.length);
+    return { books, skipped };
+  } finally {
+    bible.dispose();
   }
-  onProgress?.(total, total);
-  return { books, skipped };
 }

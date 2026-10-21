@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { Logoxide, Topos } from "logoxide";
 import { describe, expect, it } from "vitest";
-import { clean, markupOf, readBook, readFiles, splitOsis } from "@/bible/parse";
+import { clean, readBook, readFiles } from "@/bible/parse";
 
 const lx = Logoxide.new();
 const topos = Topos.new();
@@ -57,12 +57,6 @@ describe("clean", () => {
 });
 
 describe("files", () => {
-  it("tells markups apart", () => {
-    expect(markupOf("a.usx", fixture("jhn_bsb.usx"))).toBe("usx");
-    expect(markupOf("x.txt", fixture("3jn_kjv.usfm"))).toBe("usfm");
-    expect(markupOf("notes.txt", "hello")).toBe(null);
-  });
-
   it("reads several, skipping what isn't a book", () => {
     const enc = new TextEncoder();
     const { books, skipped } = readFiles(lx, topos, [
@@ -72,6 +66,15 @@ describe("files", () => {
     ]);
     expect(books.map((b) => b.bookId)).toEqual([43, 64]);
     expect(skipped).toEqual(["cover.png"]);
+  });
+
+  it("skips a book without verses, and finds none in files of no book", () => {
+    const enc = new TextEncoder();
+    const empty = { name: "JUD.usfm", bytes: enc.encode("\\id JUD\n\\c 1\n") };
+    const { books, skipped } = readFiles(lx, topos, [empty, { name: "64-3JN.SFM", bytes: enc.encode(fixture("3jn_kjv.usfm")) }]);
+    expect(books.map((b) => b.bookId)).toEqual([64]);
+    expect(skipped).toEqual(["JUD.usfm"]);
+    expect(readFiles(lx, topos, [{ name: "notes.txt", bytes: enc.encode("hello") }])).toEqual({ books: [], skipped: ["notes.txt"] });
   });
 });
 
@@ -83,7 +86,6 @@ describe("OSIS", () => {
 
   it("reads each book of a whole Bible", () => {
     const bible = osis(`<div type="bookGroup">${phlm}${jude}</div>`);
-    expect(splitOsis(bible)).toHaveLength(2);
     const { books, skipped } = readFiles(lx, topos, [{ name: "bible.xml", bytes: new TextEncoder().encode(bible) }]);
     expect(skipped).toEqual([]);
     expect(books.map((b) => b.bookId)).toEqual([57, 65]);
@@ -91,10 +93,10 @@ describe("OSIS", () => {
     expect(Object.keys(books[1]!.verses)).toEqual(["1:1", "1:2"]);
   });
 
-  it("leaves a single book as it is, and won't split milestoned books", () => {
-    const one = osis(jude);
-    expect(splitOsis(one)).toEqual([one]);
-    expect(splitOsis(osis(`<div type="book" sID="b1" osisID="Jude"/>x<div eID="b1"/><div type="book" sID="b2" osisID="Phlm"/>y<div eID="b2"/>`))).toBe(null);
+  it("reads each book of a whole Bible whose books are milestones", () => {
+    const bible = osis(`<div type="book" sID="b1" osisID="Phlm"/><chapter osisID="Phlm.1"><verse osisID="Phlm.1.1">Paul.</verse></chapter><div eID="b1"/><div type="book" sID="b2" osisID="Jude"/><chapter osisID="Jude.1"><verse osisID="Jude.1.1">Jude.</verse></chapter><div eID="b2"/>`);
+    const { books } = readFiles(lx, topos, [{ name: "bible.xml", bytes: new TextEncoder().encode(bible) }]);
+    expect(books.map((b) => [b.bookId, b.verses["1:1"]!.text])).toEqual([[57, "Paul."], [65, "Jude."]]);
   });
 });
 
@@ -105,6 +107,6 @@ describe("zips", () => {
     const { books, skipped } = readFiles(lx, topos, [{ name: "Bible.ZIP", bytes: zip }], (done) => progress.push(done));
     expect(books.map((b) => b.bookId).sort()).toEqual([43, 64]);
     expect(skipped).toEqual([]);
-    expect(progress.at(-1)).toBe(5);
+    expect(progress).toEqual([0, 1, 2]);
   });
 });
