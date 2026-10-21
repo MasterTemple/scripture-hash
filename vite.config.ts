@@ -9,7 +9,7 @@ export const logoxideVersion = (): string =>
   JSON.parse(readFileSync(new URL("./node_modules/logoxide/package.json", import.meta.url), "utf8")).version;
 
 export default defineConfig({
-  // Relative URLs, so the build works under any path (GitHub Pages serves it at /ScriptureHash/)
+  // Relative URLs, so the build works under any path (GitHub Pages serves it at /scripture-hash/)
   base: "./",
   plugins: [react(), tailwindcss()],
   define: { __LOGOXIDE_VERSION__: JSON.stringify(logoxideVersion()) },
