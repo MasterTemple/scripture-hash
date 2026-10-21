@@ -29,7 +29,7 @@ describe("helpers", () => {
     expect(suggestBooks("1 pe")[0]!.name).toBe("1 Peter");
     expect(suggestBooks("phil").map((b) => b.name)).toContain("Philemon");
     // Unlike topos's completions, a whole name is still a book, and so is a number alone
-    expect(suggestBooks("john").map((b) => b.name)).toEqual(["John"]);
+    expect(suggestBooks("john").map((b) => b.name)).toEqual(["John", "1 John", "2 John", "3 John"]);
     expect(suggestBooks("1").map((b) => b.name)).toContain("1 Corinthians");
     expect(suggestBooks("  1  john")[0]!.name).toBe("1 John");
   });

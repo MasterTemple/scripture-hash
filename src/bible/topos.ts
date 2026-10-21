@@ -26,28 +26,8 @@ export function bookById(id: number): BookInfo {
 /** A book's id from its name or abbreviation ("rom", "1 Pet"), ignoring case */
 export const findBook = (name: string): number | null => (name.trim() ? topos().findBook(name.trim()) : null);
 
-/** Books whose name or abbreviation starts with what's typed, best first */
-export function suggestBooks(typed: string, limit = 6): BookInfo[] {
-  const q = typed.trim().toLowerCase().replace(/\s+/g, " ");
-  if (!q) return [];
-  const exact = findBook(q);
-  const scored: [BookInfo, number][] = [];
-  for (const book of books) {
-    const names = [book.name, book.abbreviation, book.osis].map((n) => n.toLowerCase());
-    let score = -1;
-    if (book.id === exact) score = 0;
-    else if (names.some((n) => n.startsWith(q))) score = 1;
-    else if (names.some((n) => n.replace(/\s/g, "").startsWith(q.replace(/\s/g, "")))) score = 2;
-    else if (book.name.toLowerCase().includes(q)) score = 3;
-    if (score >= 0) scored.push([book, score]);
-  }
-  // Names merely containing what's typed only when nothing starts with it
-  const best = scored.some(([, s]) => s <= 2) ? scored.filter(([, s]) => s <= 2) : scored;
-  return best
-    .sort((a, b) => a[1] - b[1] || a[0].id - b[0].id)
-    .slice(0, limit)
-    .map(([book]) => book);
-}
+/** Books for what's typed, best first: the one it names, then names starting with it, then later words */
+export const suggestBooks = (typed: string, limit = 6): BookInfo[] => topos().suggestBooks(typed, limit);
 
 export function formatRef(v: VerseRef, style: "name" | "abbreviation" = "name"): string {
   const book = bookById(v.bookId);
