@@ -1,18 +1,20 @@
-import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { Logoxide } from "logoxide";
 import { defineConfig } from "vite";
 
-/** The logoxide installed, which saved books record having been read by */
-export const logoxideVersion = (): string =>
-  JSON.parse(readFileSync(new URL("./node_modules/logoxide/package.json", import.meta.url), "utf8")).version;
+/**
+ * What the text logoxide reads from a file depends on (its parsed-book format and version),
+ * which saved books record having been read by
+ */
+export const logoxideTextVersion = (): string => Logoxide.new().textVersion();
 
 export default defineConfig({
   // Relative URLs, so the build works under any path (GitHub Pages serves it at /scripture-hash/)
   base: "./",
   plugins: [react(), tailwindcss()],
-  define: { __LOGOXIDE_VERSION__: JSON.stringify(logoxideVersion()) },
+  define: { __LOGOXIDE_TEXT_VERSION__: JSON.stringify(logoxideTextVersion()) },
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },

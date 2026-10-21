@@ -1,3 +1,4 @@
+import { Logoxide } from "logoxide";
 import { describe, expect, it } from "vitest";
 import { isCurrent, READER } from "@/bible/library";
 import type { Translation } from "@/bible/types";
@@ -7,8 +8,9 @@ const uploaded: Translation = { id: "upload:mine", name: "Mine", abbreviation: "
 const book = { bookId: 43, verses: {} };
 
 describe("saved books", () => {
-  it("names the parser and logoxide's version", () => {
-    expect(READER).toMatch(/^\d+\/logoxide \d+\.\d+\.\d+/);
+  it("names the parser and logoxide's text version", () => {
+    expect(READER).toMatch(/^\d+\/logoxide /);
+    expect(READER.endsWith(Logoxide.new().textVersion())).toBe(true);
   });
 
   it("downloads again what another reader read, but keeps uploads", () => {

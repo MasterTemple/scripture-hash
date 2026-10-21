@@ -10,8 +10,11 @@ const db = createStore("scripture-hash", "books");
 /** Bump when parse.ts reads books differently (what it keeps of a verse, how it cleans text) */
 const PARSER = 3;
 
-/** What reads books now; a downloaded book read by something else is downloaded again */
-export const READER = `${PARSER}/logoxide ${__LOGOXIDE_VERSION__}`;
+/**
+ * What reads books now: this parser and logoxide's text version, which changes only when a
+ * release reads files differently. A downloaded book read by something else is downloaded again.
+ */
+export const READER = `${PARSER}/logoxide ${__LOGOXIDE_TEXT_VERSION__}`;
 
 /** A book as saved: `reader` is what read it (missing for books saved before it was recorded) */
 type SavedBook = BookText & { reader?: string };
