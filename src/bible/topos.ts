@@ -1,4 +1,4 @@
-import { BookStyle, initialized, OffsetUnit, Topos, type BookInfo } from "topos-bible";
+import { BookStyle, initialized, OffsetUnit, ToposOptions, type BookInfo, type Topos } from "topos-bible";
 import { spanLabel, type SelectedPassage, type VerseRef, type VerseText } from "./types";
 
 let instance: Topos | null = null;
@@ -8,7 +8,8 @@ let books: BookInfo[] = [];
 export async function loadTopos() {
   if (instance) return;
   await initialized;
-  instance = Topos.new();
+  // A selection is meant to be references, so a book named alone ("Jude") is the whole book
+  instance = ToposOptions.create().booksAlone(true).build();
   books = instance.books();
 }
 
@@ -42,51 +43,14 @@ export function formatPrinted(v: VerseRef, printed?: VerseText): string {
   return printed.chapters ? `${book} ${span}` : `${book} ${v.chapter}:${span}`;
 }
 
-/** Book names alone ("Romans", "Jude"), which topos leaves to us, as whole books */
-function wholeBooks(text: string, covered: [number, number][]): { at: number; bookId: number }[] {
-  const found: { at: number; bookId: number }[] = [];
-  const chunk = /[^,;\n]+/g;
-  for (const m of text.matchAll(chunk)) {
-    const start = m.index;
-    const end = start + m[0].length;
-    if (covered.some(([s, e]) => s < end && e > start)) continue;
-    for (const piece of m[0].split(/\band\b|&/i)) {
-      const name = piece.trim().replace(/\.$/, "");
-      if (!name || /\d+\s*[:.]/.test(name)) continue;
-      const bookId = findBook(name);
-      if (bookId) found.push({ at: start + m[0].indexOf(piece), bookId });
-    }
-  }
-  return found;
-}
-
 /** Every passage written in the text (references, chapters, and whole books), in order */
 export function parseSelection(text: string): SelectedPassage[] {
   const t = topos();
-  const matches = t.search(text, OffsetUnit.Utf16);
-  const found: { at: number; passage: SelectedPassage }[] = matches.map((m) => ({
-    at: m.start,
-    passage: {
-      reference: m.passage.reference,
-      bookId: m.passage.bookId,
-      verses: t.verses(m.passage).map(({ chapter, verse }) => ({ bookId: m.passage.bookId, chapter, verse })),
-    },
+  return t.search(text, OffsetUnit.Utf16).map((m) => ({
+    reference: m.passage.reference,
+    bookId: m.passage.bookId,
+    verses: t.verses(m.passage).map(({ chapter, verse }) => ({ bookId: m.passage.bookId, chapter, verse })),
   }));
-  for (const { at, bookId } of wholeBooks(text, matches.map((m) => [m.start, m.end]))) {
-    const book = bookById(bookId);
-    // OSIS, where a single-chapter book's number is its chapter
-    const passage = t.parse(book.chapters > 1 ? `${book.osis}.1-${book.osis}.${book.chapters}` : `${book.osis}.1`, BookStyle.Name);
-    if (!passage) continue;
-    found.push({
-      at,
-      passage: {
-        reference: book.name,
-        bookId,
-        verses: t.verses(passage).map(({ chapter, verse }) => ({ bookId, chapter, verse })),
-      },
-    });
-  }
-  return found.sort((a, b) => a.at - b.at).map((f) => f.passage);
 }
 
 /** The verses of every passage, each once, in the order first written */

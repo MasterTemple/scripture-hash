@@ -12,8 +12,8 @@ describe("parseSelection", () => {
   });
 
   it("reads whole books", () => {
-    const passages = parseSelection("Philemon\nJude, Titus\nJohn 1:1");
-    expect(passages.map((p) => p.reference)).toEqual(["Philemon", "Jude", "Titus", "John 1:1"]);
+    const passages = parseSelection("Philemon\nJude, Titus\nJohn 1:1\nRuth & Esther");
+    expect(passages.map((p) => p.reference)).toEqual(["Philemon", "Jude", "Titus", "John 1:1", "Ruth", "Esther"]);
     expect(passages[0]!.verses).toHaveLength(25);
     expect(passages[2]!.verses.at(-1)).toEqual({ bookId: 56, chapter: 3, verse: 15 });
   });
