@@ -144,32 +144,37 @@ export function useTypingView(drill: RefObject<HTMLElement | null>, on: boolean)
     const viewport = window.visualViewport;
     // Where the keyboard leaves room, followed each frame: Safari slides the visible part of the
     // page about as the keyboard opens without telling in time, and a moment behind looks dragged.
-    // Once it's still, the page goes to its top, where the drill and what's visible line up for
-    // sure (Safari can leave them apart until it next scrolls); it's put back after.
+    // Once the keyboard is still, the page is kept at its top, where the drill and what's visible
+    // line up for sure (Safari can leave them apart, and scrolls on going from field to field),
+    // undoing a scroll the frame after it; a couple of times a field, so as not to fight Safari
+    // if it insists. It's put back after.
     const saved = window.scrollY;
     let top = -1;
     let height = -1;
-    let changed = 0;
+    let resized = 0;
     let tries = 0;
     let frame = 0;
     const place = () => {
       const t = viewport?.offsetTop ?? 0;
       const h = viewport?.height ?? window.innerHeight;
-      if (t !== top || h !== height) {
-        if (h !== height) tries = 0;
-        top = t;
+      if (h !== height) {
         height = h;
-        changed = performance.now();
-        root.style.top = `${t}px`;
+        resized = performance.now();
         root.style.height = `${h}px`;
-      } else if (tries < 2 && (t !== 0 || window.scrollY !== 0) && performance.now() - changed > 150) {
+      }
+      if (t !== top) {
+        top = t;
+        root.style.top = `${t}px`;
+      }
+      if (tries < 2 && (t !== 0 || window.scrollY !== 0) && performance.now() - resized > 150) {
         tries++;
-        changed = performance.now();
         window.scrollTo(0, 0);
       }
       frame = requestAnimationFrame(place);
     };
     place();
+    const onFocus = () => (tries = 0);
+    root.addEventListener("focusin", onFocus);
     // Dragging doesn't slide the page about under it, though a verse too long to fit scrolls
     const hold = (e: TouchEvent) => {
       const scroller = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-scrolls]") : null;
@@ -184,6 +189,7 @@ export function useTypingView(drill: RefObject<HTMLElement | null>, on: boolean)
       // Once the drill is back in the page, which is short of it until then
       requestAnimationFrame(() => window.scrollTo(0, saved));
       root.removeEventListener("touchmove", hold);
+      root.removeEventListener("focusin", onFocus);
       root.style.top = "";
       root.style.height = "";
     };

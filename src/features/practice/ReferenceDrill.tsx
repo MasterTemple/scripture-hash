@@ -76,7 +76,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
     if (result || state.status !== "ready") return;
     const empty = (ask.book && !guess.book.trim() && bookRef) || (ask.chapter && !guess.chapter && chapterRef) || (ask.verse && !guess.verse && verseRef);
     if (empty) {
-      empty.current?.focus();
+      empty.current?.focus({ preventScroll: true });
       return;
     }
     const g = grade(verse, guess, ask, printed?.span, printed?.chapters);
@@ -95,7 +95,8 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
     if (part !== "chapter" || !ask.verse || !jumpWhenDone || !value || state.status !== "ready") return;
     const bookId = ask.book ? findBook(next.book) : verse.bookId;
     const right = grade(verse, next, ask, printed?.span, printed?.chapters).chapter === "correct";
-    if (numberDone(value, bookId ? bookById(bookId).chapters : null, right)) verseRef.current?.focus();
+    // Without scrolling, which Safari would do to show a field that's in view already
+    if (numberDone(value, bookId ? bookById(bookId).chapters : null, right)) verseRef.current?.focus({ preventScroll: true });
   };
 
   const reveal = () => {
@@ -166,7 +167,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
                 ref={bookRef}
                 value={guess.book}
                 onChange={(b) => !result && setGuess((g) => ({ ...g, book: b }))}
-                onAccept={() => (ask.chapter ? chapterRef : verseRef).current?.focus()}
+                onAccept={() => (ask.chapter ? chapterRef : verseRef).current?.focus({ preventScroll: true })}
                 onEnter={() => (result ? skip() : check())}
                 locked={!!result}
                 above={docked}
@@ -185,7 +186,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
                   locked={!!result}
                   className={partClass(result?.chapter)}
                   onChange={(chapter) => type("chapter", chapter)}
-                  onKeyDown={onKey(() => verseRef.current?.focus(), null)}
+                  onKeyDown={onKey(() => verseRef.current?.focus({ preventScroll: true }), null)}
                 />
               ) : (
                 <Input disabled value={verse.chapter} aria-label="Chapter" className={cn(GIVEN, "h-12 w-16 text-center tabular-nums")} />
