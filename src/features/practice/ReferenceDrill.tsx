@@ -9,7 +9,7 @@ import { grade, numberDone, partsToAsk, type Grade, type Guess, type PartResult 
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { BookInput } from "./BookInput";
-import { Card, focusForAnswer, Scripture, VerseStatus } from "./common";
+import { Card, focusForAnswer, Scripture, useTopOnFocus, VerseStatus } from "./common";
 
 /**
  * Tapping a button leaves the focus in the field being typed in, so a phone's keyboard stays
@@ -46,6 +46,8 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
   const chapterRef = useRef<HTMLInputElement>(null);
   const verseRef = useRef<HTMLInputElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const drillRef = useRef<HTMLDivElement>(null);
+  useTopOnFocus(drillRef);
   const book = bookById(verse.bookId);
   const printed = state.status === "ready" ? state.verse : undefined;
   const span = printed && spanLabel(printed);
@@ -140,7 +142,7 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
   const verseLabel = span ?? String(verse.verse);
 
   return (
-    <div data-drill className="flex flex-col gap-5">
+    <div ref={drillRef} data-drill className="flex flex-col gap-5">
       <Card className="relative overflow-hidden px-6 py-8 sm:px-10 sm:py-12">
         {state.status === "ready" ? (
           <div key={`${verse.bookId}.${verse.chapter}.${verse.verse}`} className="animate-fade-up">

@@ -136,6 +136,16 @@
   }
 }
 
+/*
+ * On a touch screen, room under the drill while one of its fields is being typed in (under
+ * the keyboard), so the verse can be scrolled to the top of the screen
+ */
+@media (pointer: coarse) {
+  main:has([data-drill] input:focus) {
+    padding-bottom: 100dvh;
+  }
+}
+
 @utility scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
