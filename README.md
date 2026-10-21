@@ -12,6 +12,10 @@ Write what to learn the way you'd write it anywhere, e.g. `Rom 8:28-39; Ps 23`, 
 
 [![Typing Whole Words](./docs/whole-word.png)](https://mastertemple.github.io/scripture-hash/)
 
+## Install it
+
+It's an installable web app that works offline. On an iPhone or iPad, open it in Safari, tap Share, then **Add to Home Screen**; on Android or desktop Chrome and Edge, use **Install app** in the browser's menu. Once it says it's ready to use offline, the app runs without a connection, along with every book you've practiced from (the books of a verse set download as soon as you open it).
+
 ## Bibles
 
 - **Built in**: BSB, KJV, WEB, ASV, LSV, and YLT. Each book downloads from [fetch.bible](https://fetch.bible) the first time it's needed and is then kept in IndexedDB, so it works offline.
@@ -24,6 +28,7 @@ Write what to learn the way you'd write it anywhere, e.g. `Rom 8:28-39; Ps 23`, 
 - [topos-bible](https://www.npmjs.com/package/topos-bible) finds, parses, and completes references: the selection editor, book suggestions, and verse expansion (`src/bible/topos.ts`)
 - [logoxide](https://www.npmjs.com/package/logoxide) reads USFM, USX, OSIS, and zips into per-verse text. It runs in a Web Worker so its WebAssembly only loads when a book is first needed (`src/bible/parse.ts`, `src/bible/worker.ts`)
 - zustand for state (settings, sets, history, and progress persist in localStorage)
+- [vite-plugin-pwa](https://vite-pwa-org.netlify.app) makes it installable and caches the app for offline use (`vite.config.ts`, `src/lib/pwa.ts`); a new version waits for you to reload
 
 ```bash
 npm install

@@ -1,10 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { loadTopos } from "@/bible/topos";
+import { registerOffline } from "@/lib/pwa";
 import App from "./App";
 import "./index.css";
 
 const root = createRoot(document.getElementById("root")!);
+registerOffline();
 
 loadTopos().then(
   () =>
