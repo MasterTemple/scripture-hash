@@ -135,6 +135,8 @@
   html {
     -webkit-text-size-adjust: 100%;
     color-scheme: light;
+    /* Nothing (a sheet sliding in, say) widens the page, for a phone to pan or zoom out to */
+    overflow-x: hidden;
   }
   html.dark {
     color-scheme: dark;
