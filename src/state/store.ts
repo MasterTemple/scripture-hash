@@ -32,12 +32,11 @@ export interface Settings {
   autoAdvance: boolean;
   /** Seconds a right answer shows before going on */
   rightDelay: number;
-  /** Seconds a wrong answer checked by jumping ahead shows before going on */
+  /** Go to the next verse on its own after a wrong answer, too */
+  advanceWrong: boolean;
+  /** Seconds a wrong answer shows before going on */
   wrongDelay: number;
-  /**
-   * Naming the reference: once a chapter or verse number is right, or can't go on (a 4 in a
-   * book of 5 chapters), move to the verse, or check the answer and go on to the next verse
-   */
+  /** Naming the reference: once a chapter is right, or can't go on (a 4 in a book of 5 chapters), move to the verse */
   jumpWhenDone: boolean;
   /** Whether the current tab's settings under the practice area are expanded (wider screens) */
   tabSettingsOpen: boolean;
@@ -160,6 +159,7 @@ export const useApp = create<State>()(
         showPunctuation: true,
         autoAdvance: true,
         rightDelay: 0.8,
+        advanceWrong: false,
         wrongDelay: 2,
         // Made for phones' number pads; on a keyboard, a ":" or Enter typed after would land in the next field
         jumpWhenDone: typeof window !== "undefined" && matchMedia("(pointer: coarse)").matches,

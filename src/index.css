@@ -90,6 +90,8 @@
   --animate-shake: shake 0.4s ease-in-out;
   --animate-fade-up: fade-up 0.3s ease-out;
   --animate-settle: settle 0.3s ease-out;
+  --animate-flash: flash 0.9s ease-out;
+  --animate-nudge: nudge 1.2s ease-in-out infinite;
 
   @keyframes caret {
     50% { opacity: 0; }
@@ -105,10 +107,25 @@
   @keyframes settle {
     from { color: var(--success); }
   }
+  /* A border lit in --flash, fading back */
+  @keyframes flash {
+    0%, 45% {
+      border-color: var(--flash);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--flash) 35%, transparent);
+    }
+  }
+  @keyframes nudge {
+    50% { transform: translateX(3px); }
+  }
   @keyframes fade-up {
     from { transform: translateY(6px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
+}
+
+/* A bar filling up, timed in place (how long varies) */
+@keyframes fill {
+  from { transform: scaleX(0); }
 }
 
 @layer base {
@@ -133,16 +150,6 @@
   }
   input[type="number"] {
     -moz-appearance: textfield;
-  }
-}
-
-/*
- * On a touch screen, room under the drill while one of its fields is being typed in (under
- * the keyboard), so the verse can be scrolled to the top of the screen
- */
-@media (pointer: coarse) {
-  main:has([data-drill] input:focus) {
-    padding-bottom: 100dvh;
   }
 }
 

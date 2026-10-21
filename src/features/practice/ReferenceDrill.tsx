@@ -1,6 +1,6 @@
 import { ArrowRightIcon, CheckIcon, EyeIcon, SkipForwardIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type RefObject } from "react";
-import { bookById, findBook, formatPrinted, verseCount } from "@/bible/topos";
+import { bookById, findBook, formatPrinted } from "@/bible/topos";
 import { spanLabel, type VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
 import { Input, Kbd } from "@/components/ui/primitives";
@@ -9,7 +9,7 @@ import { grade, numberDone, partsToAsk, type Grade, type Guess, type PartResult 
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { BookInput } from "./BookInput";
-import { Card, focusForAnswer, Scripture, useTopOnFocus, VerseStatus } from "./common";
+import { Card, flash, focusForAnswer, NextButton, Scripture, useDocked, useMoveOn, useTypingView, VerseStatus } from "./common";
 
 /**
  * Tapping a button leaves the focus in the field being typed in, so a phone's keyboard stays
@@ -32,22 +32,22 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
   const chosen = useApp((s) => s.settings.ask);
   // A book or chapter every verse shares is filled in, since it's obvious
   const { ask, obvious } = useMemo(() => partsToAsk(chosen, pool), [chosen, pool]);
-  const autoAdvance = useApp((s) => s.settings.autoAdvance);
   const jumpWhenDone = useApp((s) => s.settings.jumpWhenDone);
-  const rightDelay = useApp((s) => s.settings.rightDelay);
-  const wrongDelay = useApp((s) => s.settings.wrongDelay);
   const record = useApp((s) => s.record);
   const markMissing = useSession((s) => s.markMissing);
   const [state, retry] = useVerseText(translation, verse);
 
   const [guess, setGuess] = useState<Guess>({ book: "", chapter: "", verse: "" });
-  const [result, setResult] = useState<(Grade & { revealed?: boolean; jumped?: boolean }) | null>(null);
+  const [result, setResult] = useState<(Grade & { revealed?: boolean }) | null>(null);
   const bookRef = useRef<HTMLInputElement>(null);
   const chapterRef = useRef<HTMLInputElement>(null);
   const verseRef = useRef<HTMLInputElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   const drillRef = useRef<HTMLDivElement>(null);
-  useTopOnFocus(drillRef);
+  // On a touch screen, the answer is typed in a row at the bottom of the screen, and while
+  // typing the verse and that row fill the space above the keyboard
+  const docked = useDocked();
+  const typing = useTypingView(drillRef, docked);
   const book = bookById(verse.bookId);
   const printed = state.status === "ready" ? state.verse : undefined;
   const span = printed && spanLabel(printed);
@@ -69,42 +69,33 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
     if (!result) return;
     // Enter in a field goes on once it's answered, so the focus stays in one to keep a phone's keyboard up
     if (!document.activeElement?.closest("[data-drill] input")) focusForAnswer(nextRef.current);
-    // An answer checked by jumping ahead goes on either way, a miss after time to read the answer
-    if (result.jumped || (result.correct && autoAdvance)) {
-      const timer = setTimeout(() => advance(pool), (result.correct ? rightDelay : wrongDelay) * 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [result, autoAdvance, rightDelay, wrongDelay, pool]);
+  }, [result]);
+  const moveOn = useMoveOn(!!result, !!result?.correct, pool);
 
-  /** Grades the answer; `answer` is one just typed, before its state lands, `jumped` when typing it checked it */
-  const check = (answer: Guess = guess, jumped = false) => {
+  const check = () => {
     if (result || state.status !== "ready") return;
-    const empty = (ask.book && !answer.book.trim() && bookRef) || (ask.chapter && !answer.chapter && chapterRef) || (ask.verse && !answer.verse && verseRef);
+    const empty = (ask.book && !guess.book.trim() && bookRef) || (ask.chapter && !guess.chapter && chapterRef) || (ask.verse && !guess.verse && verseRef);
     if (empty) {
       empty.current?.focus();
       return;
     }
-    const g = grade(verse, answer, ask, printed?.span, printed?.chapters);
-    setResult({ ...g, jumped });
+    const g = grade(verse, guess, ask, printed?.span, printed?.chapters);
+    setResult(g);
     record({ mode: "reference", verse, translation: translation.abbreviation, correct: g.correct, score: g.score, answer: g.answer });
   };
 
   /**
-   * A chapter or verse typed: with jumping on, one that's done moves on to the verse, or
-   * checks the answer (the book, when asked, is the one guessed)
+   * A chapter or verse typed: with jumping on, a chapter that's done moves on to the verse
+   * (the book, when asked, is the one guessed)
    */
   const type = (part: "chapter" | "verse", value: string) => {
     if (result) return;
     const next = { ...guess, [part]: value };
     setGuess(next);
-    if (!jumpWhenDone || !value || state.status !== "ready") return;
+    if (part !== "chapter" || !ask.verse || !jumpWhenDone || !value || state.status !== "ready") return;
     const bookId = ask.book ? findBook(next.book) : verse.bookId;
-    const chapter = ask.chapter ? Number.parseInt(next.chapter, 10) : verse.chapter;
-    const last = !bookId ? null : part === "chapter" ? bookById(bookId).chapters : chapter > 0 ? verseCount(bookId, chapter) : null;
-    const right = grade(verse, next, ask, printed?.span, printed?.chapters)[part] === "correct";
-    if (!numberDone(value, last, right)) return;
-    if (part === "chapter" && ask.verse) verseRef.current?.focus();
-    else check(next, true);
+    const right = grade(verse, next, ask, printed?.span, printed?.chapters).chapter === "correct";
+    if (numberDone(value, bookId ? bookById(bookId).chapters : null, right)) verseRef.current?.focus();
   };
 
   const reveal = () => {
@@ -142,8 +133,12 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
   const verseLabel = span ?? String(verse.verse);
 
   return (
-    <div ref={drillRef} data-drill className="flex flex-col gap-5">
-      <Card className="relative overflow-hidden px-6 py-8 sm:px-10 sm:py-12">
+    <div
+      ref={drillRef}
+      data-drill
+      className={cn("flex flex-col gap-5", docked && "pb-20", typing && "fixed inset-x-0 z-50 gap-3 bg-background px-4 pt-3 pb-0 overscroll-contain")}
+    >
+      <Card data-scrolls={typing || undefined} className={cn("relative overflow-hidden px-6 py-8 sm:px-10 sm:py-12", typing && "min-h-0 shrink overflow-y-auto overscroll-contain py-6", flash(!!result, !!result?.correct))}>
         {state.status === "ready" ? (
           <div key={`${verse.bookId}.${verse.chapter}.${verse.verse}`} className="animate-fade-up">
             <Scripture>{state.verse.text}</Scripture>
@@ -155,52 +150,78 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
         <span className="absolute top-3 right-4 text-[11px] font-semibold tracking-wider text-muted-foreground/70 uppercase">{translation.abbreviation}</span>
       </Card>
 
-      <div className="flex flex-col items-center gap-4">
-        <div className={cn("flex w-full max-w-xl flex-wrap items-center justify-center gap-2", result && !result.correct && "animate-shake")}>
-          {ask.book ? (
-            <BookInput
-              ref={bookRef}
-              value={guess.book}
-              onChange={(b) => !result && setGuess((g) => ({ ...g, book: b }))}
-              onAccept={() => (ask.chapter ? chapterRef : verseRef).current?.focus()}
-              onEnter={() => (result ? skip() : check())}
-              locked={!!result}
-              className={cn("min-w-0 flex-1 basis-48", result && partInputClass(result.book))}
-            />
-          ) : (
-            <Input disabled value={book.name} aria-label="Book" className={cn(GIVEN, "h-12 min-w-0 flex-1 basis-48")} />
+      <div className={cn("flex flex-col items-center gap-4", typing && "mt-auto gap-3")}>
+        <div
+          className={cn(
+            typing
+              ? "order-last -mx-4 flex w-[calc(100%+2rem)] items-center gap-1.5 border-t bg-background px-3 py-2"
+              : docked
+                ? "fixed inset-x-0 bottom-0 z-30 flex items-center gap-1.5 border-t bg-background/95 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+                : "flex w-full max-w-xl flex-wrap items-center justify-center gap-2",
           )}
-          <div className="flex items-center gap-1.5">
-            {ask.chapter ? (
-              <NumberField
-                ref={chapterRef}
-                letter="C"
-                label="Chapter"
-                value={guess.chapter}
+        >
+          <div className={cn("flex min-w-0 flex-1 flex-wrap items-center justify-center gap-2", docked && "flex-nowrap gap-1.5", result && !result.correct && "animate-shake")}>
+            {ask.book ? (
+              <BookInput
+                ref={bookRef}
+                value={guess.book}
+                onChange={(b) => !result && setGuess((g) => ({ ...g, book: b }))}
+                onAccept={() => (ask.chapter ? chapterRef : verseRef).current?.focus()}
+                onEnter={() => (result ? skip() : check())}
                 locked={!!result}
-                className={partClass(result?.chapter)}
-                onChange={(chapter) => type("chapter", chapter)}
-                onKeyDown={onKey(() => verseRef.current?.focus(), null)}
+                above={docked}
+                className={cn("min-w-0 flex-1", docked ? "basis-0" : "basis-48", result && partInputClass(result.book))}
               />
             ) : (
-              <Input disabled value={verse.chapter} aria-label="Chapter" className={cn(GIVEN, "h-12 w-16 text-center tabular-nums")} />
+              <Input disabled value={book.name} aria-label="Book" className={cn(GIVEN, "h-12 min-w-0 flex-1", docked ? "basis-0" : "basis-48")} />
             )}
-            <span className="text-lg font-semibold text-muted-foreground">:</span>
-            {ask.verse ? (
-              <NumberField
-                ref={verseRef}
-                letter="V"
-                label="Verse"
-                value={guess.verse}
-                locked={!!result}
-                className={partClass(result?.verse)}
-                onChange={(verse) => type("verse", verse)}
-                onKeyDown={onKey(null, ask.chapter ? backToChapter : null)}
-              />
-            ) : (
-              <Input disabled value={verseLabel} aria-label="Verse" className={cn(GIVEN, "h-12 text-center tabular-nums", printed?.chapters ? "w-28" : span ? "w-20" : "w-16")} />
-            )}
+            <div className="flex items-center gap-1.5">
+              {ask.chapter ? (
+                <NumberField
+                  ref={chapterRef}
+                  letter="C"
+                  label="Chapter"
+                  value={guess.chapter}
+                  locked={!!result}
+                  className={partClass(result?.chapter)}
+                  onChange={(chapter) => type("chapter", chapter)}
+                  onKeyDown={onKey(() => verseRef.current?.focus(), null)}
+                />
+              ) : (
+                <Input disabled value={verse.chapter} aria-label="Chapter" className={cn(GIVEN, "h-12 w-16 text-center tabular-nums")} />
+              )}
+              <span className="text-lg font-semibold text-muted-foreground">:</span>
+              {ask.verse ? (
+                <NumberField
+                  ref={verseRef}
+                  letter="V"
+                  label="Verse"
+                  value={guess.verse}
+                  locked={!!result}
+                  className={partClass(result?.verse)}
+                  onChange={(verse) => type("verse", verse)}
+                  onKeyDown={onKey(null, ask.chapter ? backToChapter : null)}
+                />
+              ) : (
+                <Input disabled value={verseLabel} aria-label="Verse" className={cn(GIVEN, "h-12 text-center tabular-nums", printed?.chapters ? "w-28" : span ? "w-20" : "w-16")} />
+              )}
+            </div>
           </div>
+          {docked &&
+            (result ? (
+              <NextButton delay={moveOn} size="icon" onMouseDown={keepFocus} onClick={skip} aria-label="Next" className="size-12 shrink-0 rounded-xl [&_svg]:size-5" />
+            ) : (
+              <Button
+                size="icon"
+                onMouseDown={keepFocus}
+                onClick={check}
+                disabled={state.status !== "ready"}
+                aria-label="Check"
+                className="size-12 shrink-0 rounded-xl [&_svg]:size-5"
+              >
+                <ArrowRightIcon />
+              </Button>
+            ))}
         </div>
 
         {(obvious.book || obvious.chapter) && !result && (
@@ -225,16 +246,16 @@ export function ReferenceDrill({ verse, pool }: { verse: VerseRef; pool: VerseRe
                 {!result.correct && !result.revealed && <span className="opacity-80"> (you said {result.answer})</span>}
               </span>
             </div>
-            <Button ref={nextRef} size="lg" onMouseDown={keepFocus} onClick={skip} className="min-w-40">
+            <NextButton ref={nextRef} delay={moveOn} size="lg" onMouseDown={keepFocus} onClick={skip} className={cn("min-w-40", docked && "hidden")}>
               Next <ArrowRightIcon /> <Kbd className="ml-1 border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground">↵</Kbd>
-            </Button>
+            </NextButton>
           </div>
         ) : (
           <div className="flex items-center gap-2">
             <Button variant="ghost" onMouseDown={keepFocus} onClick={reveal} disabled={state.status !== "ready"}>
               <EyeIcon /> Show
             </Button>
-            <Button size="lg" onMouseDown={keepFocus} onClick={() => check()} disabled={state.status !== "ready"} className="min-w-36">
+            <Button size="lg" onMouseDown={keepFocus} onClick={check} disabled={state.status !== "ready"} className={cn("min-w-36", docked && "hidden")}>
               Check <Kbd className="ml-1 border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground">↵</Kbd>
             </Button>
             <Button variant="ghost" onMouseDown={keepFocus} onClick={skip}>

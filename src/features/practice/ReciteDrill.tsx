@@ -9,7 +9,7 @@ import { progress, typedRuns, wordParts, words, type WordState } from "@/practic
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { useVerseFont } from "@/features/settings/FontPicker";
-import { Card, focusForAnswer, VerseStatus } from "./common";
+import { Card, flash, focusForAnswer, NextButton, useMoveOn, VerseStatus } from "./common";
 
 /** Shows a reference; the verse is to be typed out, word by word or by first letters */
 export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[] }) {
@@ -19,8 +19,6 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   const hints = useApp((s) => s.settings.firstLetterHints && s.settings.reciteStyle === "words");
   const liveTypos = useApp((s) => s.settings.liveTypos);
   const punctuation = useApp((s) => s.settings.showPunctuation);
-  const autoAdvance = useApp((s) => s.settings.autoAdvance);
-  const rightDelay = useApp((s) => s.settings.rightDelay);
   const verseFont = useVerseFont();
   const record = useApp((s) => s.record);
   const markMissing = useSession((s) => s.markMissing);
@@ -65,13 +63,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
     record({ mode: "recite", verse, translation: translation.abbreviation, correct, score: peeked ? Math.min(p.score, 0.99) : p.score });
   }, [p.complete, recorded, target.length, correct, peeked, p.score, record, verse, translation.abbreviation]);
 
-  useEffect(() => {
-    if (!p.complete) return;
-    if (correct && autoAdvance) {
-      const timer = setTimeout(() => advance(pool), rightDelay * 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [p.complete, correct, autoAdvance, rightDelay, pool]);
+  const moveOn = useMoveOn(p.complete, correct, pool);
 
   const revealWord = () => {
     if (p.complete) return;
@@ -104,7 +96,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
         </p>
       </div>
 
-      <Card className="relative overflow-hidden px-6 py-8 sm:px-10 sm:py-10">
+      <Card className={cn("relative overflow-hidden px-6 py-8 sm:px-10 sm:py-10", flash(p.complete, correct))}>
         {state.status === "ready" ? (
           <>
             <div
@@ -197,9 +189,9 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
                 <Button variant="outline" size="lg" onClick={restart}>
                   <RotateCcwIcon /> Again
                 </Button>
-                <Button size="lg" onClick={next} className="min-w-36">
+                <NextButton delay={moveOn} size="lg" onClick={next} className="min-w-36">
                   Next <ArrowRightIcon /> <Kbd className="ml-1 border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground">↵</Kbd>
-                </Button>
+                </NextButton>
               </div>
             </div>
           ) : (

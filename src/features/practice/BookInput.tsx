@@ -13,9 +13,11 @@ export const BookInput = forwardRef<
     onEnter: () => void;
     /** Answered: it keeps the focus (and a phone's keyboard), but suggests nothing */
     locked?: boolean;
+    /** Suggestions open above, for a field at the bottom of the screen */
+    above?: boolean;
     className?: string;
   }
->(function BookInput({ value, onChange, onAccept, onEnter, locked, className }, ref) {
+>(function BookInput({ value, onChange, onAccept, onEnter, locked, above, className }, ref) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const suggestions = open && !locked ? suggestBooks(value) : [];
@@ -67,7 +69,7 @@ export const BookInput = forwardRef<
         onKeyDown={onKeyDown}
       />
       {showList && (
-        <ul role="listbox" className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-lg border bg-popover p-1 shadow-lg animate-fade-up">
+        <ul role="listbox" className={cn("absolute right-0 left-0 z-30 overflow-hidden rounded-lg border bg-popover p-1 shadow-lg animate-fade-up", above ? "bottom-full mb-1.5" : "top-full mt-1.5")}>
           {suggestions.map((book, i) => (
             <li
               key={book.id}
