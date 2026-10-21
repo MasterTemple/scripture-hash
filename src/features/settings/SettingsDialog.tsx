@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { DialogContent } from "@/components/ui/overlays";
 import { Segmented } from "@/components/ui/segmented";
 import { useApp, type Theme } from "@/state/store";
-import { AskParts, AutoAdvanceRow, FontRow, OrderRow, PunctuationRow, ReciteStyleRow, Row, WholeWordRows } from "./controls";
+import { AskParts, AutoAdvanceRow, JumpRow, FontRow, OrderRow, PunctuationRow, ReciteStyleRow, Row, WholeWordRows } from "./controls";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -22,6 +22,7 @@ export function SettingsDialog() {
     <DialogContent title="Settings" description="Saved on this device.">
       <Section title="Naming the reference">
         <AskParts />
+        <JumpRow />
       </Section>
 
       <Section title="Reciting">

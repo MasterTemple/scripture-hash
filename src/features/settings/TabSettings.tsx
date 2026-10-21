@@ -2,7 +2,7 @@ import { ChevronDownIcon, SlidersHorizontalIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/state/store";
-import { AskParts, AutoAdvanceRow, FontRow, OrderRow, PunctuationRow, ReciteStyleRow, WholeWordRows } from "./controls";
+import { AskParts, AutoAdvanceRow, JumpRow, FontRow, OrderRow, PunctuationRow, ReciteStyleRow, WholeWordRows } from "./controls";
 
 /**
  * The current tab's settings, under the practice area on wider screens, so they can be
@@ -23,6 +23,7 @@ export function TabSettings() {
         </div>
         <OrderRow />
         <AutoAdvanceRow />
+        <JumpRow />
       </>
     );
   } else {

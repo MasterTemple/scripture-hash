@@ -30,6 +30,15 @@ export interface Settings {
   showPunctuation: boolean;
   /** Go to the next verse on its own after a correct answer */
   autoAdvance: boolean;
+  /** Seconds a right answer shows before going on */
+  rightDelay: number;
+  /** Seconds a wrong answer checked by jumping ahead shows before going on */
+  wrongDelay: number;
+  /**
+   * Naming the reference: once a chapter or verse number is right, or can't go on (a 4 in a
+   * book of 5 chapters), move to the verse, or check the answer and go on to the next verse
+   */
+  jumpWhenDone: boolean;
   /** Whether the current tab's settings under the practice area are expanded (wider screens) */
   tabSettingsOpen: boolean;
   /** The font the verse is typed in */
@@ -150,6 +159,10 @@ export const useApp = create<State>()(
         liveTypos: false,
         showPunctuation: true,
         autoAdvance: true,
+        rightDelay: 0.8,
+        wrongDelay: 2,
+        // Made for phones' number pads; on a keyboard, a ":" or Enter typed after would land in the next field
+        jumpWhenDone: typeof window !== "undefined" && matchMedia("(pointer: coarse)").matches,
         reciteFont: DEFAULT_FONT,
         tabSettingsOpen: true,
         theme: "system",

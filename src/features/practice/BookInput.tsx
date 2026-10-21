@@ -11,13 +11,14 @@ export const BookInput = forwardRef<
     onChange: (value: string) => void;
     onAccept: () => void;
     onEnter: () => void;
-    readOnly?: boolean;
+    /** Answered: it keeps the focus (and a phone's keyboard), but suggests nothing */
+    locked?: boolean;
     className?: string;
   }
->(function BookInput({ value, onChange, onAccept, onEnter, readOnly, className }, ref) {
+>(function BookInput({ value, onChange, onAccept, onEnter, locked, className }, ref) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const suggestions = open && !readOnly ? suggestBooks(value) : [];
+  const suggestions = open && !locked ? suggestBooks(value) : [];
   const exact = suggestions.length > 0 && suggestions[0]!.name.toLowerCase() === value.trim().toLowerCase();
   const showList = suggestions.length > 0 && !exact;
 
@@ -47,7 +48,7 @@ export const BookInput = forwardRef<
       <Input
         ref={ref}
         value={value}
-        readOnly={readOnly}
+        aria-readonly={locked}
         placeholder="Book"
         aria-label="Book"
         autoComplete="off"

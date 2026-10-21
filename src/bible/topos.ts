@@ -30,6 +30,9 @@ export const findBook = (name: string): number | null => (name.trim() ? topos().
 /** Books for what's typed, best first: the one it names, then names starting with it, then later words */
 export const suggestBooks = (typed: string, limit = 6): BookInfo[] => topos().suggestBooks(typed, limit);
 
+/** How many verses a chapter has, or null when the book has no such chapter */
+export const verseCount = (bookId: number, chapter: number): number | null => topos().verseCount(bookId, chapter);
+
 export function formatRef(v: VerseRef, style: "name" | "abbreviation" = "name"): string {
   const book = bookById(v.bookId);
   return `${style === "name" ? book.name : book.abbreviation} ${v.chapter}:${v.verse}`;

@@ -20,6 +20,7 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   const liveTypos = useApp((s) => s.settings.liveTypos);
   const punctuation = useApp((s) => s.settings.showPunctuation);
   const autoAdvance = useApp((s) => s.settings.autoAdvance);
+  const rightDelay = useApp((s) => s.settings.rightDelay);
   const verseFont = useVerseFont();
   const record = useApp((s) => s.record);
   const markMissing = useSession((s) => s.markMissing);
@@ -67,10 +68,10 @@ export function ReciteDrill({ verse, pool }: { verse: VerseRef; pool: VerseRef[]
   useEffect(() => {
     if (!p.complete) return;
     if (correct && autoAdvance) {
-      const timer = setTimeout(() => advance(pool), 1400);
+      const timer = setTimeout(() => advance(pool), rightDelay * 1000);
       return () => clearTimeout(timer);
     }
-  }, [p.complete, correct, autoAdvance, pool]);
+  }, [p.complete, correct, autoAdvance, rightDelay, pool]);
 
   const revealWord = () => {
     if (p.complete) return;

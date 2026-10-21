@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { formatPrinted, loadTopos } from "@/bible/topos";
 import { pickNext } from "@/practice/queue";
 import { progress, typedRuns, words } from "@/practice/recite";
-import { grade, partsToAsk } from "@/practice/reference";
+import { grade, numberDone, partsToAsk } from "@/practice/reference";
 import { verseKey } from "@/bible/types";
 
 beforeAll(loadTopos);
@@ -119,5 +119,15 @@ describe("typedRuns", () => {
     expect(shown("world", "wro")).toBe("w[ro]");
     expect(shown("the", "thee")).toBe("the[e]");
     expect(typedRuns("love", "lvoe").filter((r) => !r.ok).length).toBeGreaterThan(0);
+  });
+});
+
+describe("numberDone", () => {
+  it("is done when no digit could follow", () => {
+    // 1 Peter has 5 chapters; John 3 has 36 verses
+    expect([numberDone("4", 5, false), numberDone("3", 36, false), numberDone("4", 36, false), numberDone("36", 36, false)]).toEqual([true, false, true, true]);
+  });
+  it("is done when right, and never on a number there isn't", () => {
+    expect([numberDone("1", 21, true), numberDone("7", 5, false), numberDone("0", 5, false), numberDone("4", null, false)]).toEqual([true, false, false, false]);
   });
 });

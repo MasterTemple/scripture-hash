@@ -72,3 +72,13 @@ export function partsToAsk(ask: Settings["ask"], pool: VerseRef[]): Asked {
   if (!asked.book && !asked.chapter && !asked.verse) asked.verse = true;
   return { ask: asked, obvious };
 }
+
+/**
+ * Whether a chapter or verse number being typed is finished: it's right, or it's a number
+ * there is (up to `last`) that no digit could follow, as 4 in a book of 5 chapters is
+ */
+export function numberDone(typed: string, last: number | null, right: boolean): boolean {
+  if (right) return true;
+  const n = Number.parseInt(typed, 10);
+  return last !== null && n >= 1 && n <= last && n * 10 > last;
+}

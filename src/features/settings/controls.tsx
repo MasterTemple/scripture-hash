@@ -24,7 +24,7 @@ export function Row({ title, description, children, htmlFor }: { title: string; 
   );
 }
 
-function SwitchRow({ title, description, setting }: { title: string; description: string; setting: "showPunctuation" | "liveTypos" | "firstLetterHints" | "autoAdvance" }) {
+function SwitchRow({ title, description, setting }: { title: string; description: string; setting: "showPunctuation" | "liveTypos" | "firstLetterHints" | "autoAdvance" | "jumpWhenDone" }) {
   const id = useId();
   const on = useApp((s) => s.settings[setting]);
   const update = useApp((s) => s.updateSettings);
@@ -164,4 +164,44 @@ export function OrderRow() {
   );
 }
 
-export const AutoAdvanceRow = () => <SwitchRow title="Move on when right" description="Go to the next verse after a correct answer." setting="autoAdvance" />;
+/** Moving on after a right answer, and how long it shows first */
+export function AutoAdvanceRow() {
+  const on = useApp((s) => s.settings.autoAdvance);
+  return (
+    <>
+      <SwitchRow title="Move on when right" description="Go to the next verse after a correct answer." setting="autoAdvance" />
+      {on && <DelayRow title="Pause when right" description="How long a right answer shows first." setting="rightDelay" seconds={[0.5, 0.8, 1.2, 2]} />}
+    </>
+  );
+}
+
+/** How long an answer shows before going on, in seconds */
+function DelayRow({ title, description, setting, seconds }: { title: string; description: string; setting: "rightDelay" | "wrongDelay"; seconds: number[] }) {
+  const value = useApp((s) => s.settings[setting]);
+  const update = useApp((s) => s.updateSettings);
+  return (
+    <Row title={title} description={description}>
+      <Segmented<string>
+        size="sm"
+        value={String(value)}
+        onChange={(v) => update({ [setting]: Number(v) })}
+        options={seconds.map((n) => ({ value: String(n), label: `${n}s`, title: `${n} seconds` }))}
+      />
+    </Row>
+  );
+}
+
+/** Jumping ahead as a reference is typed, and how long a miss it checks shows */
+export function JumpRow() {
+  const on = useApp((s) => s.settings.jumpWhenDone);
+  return (
+    <>
+      <SwitchRow
+        title="Jump ahead as I type"
+        description="Once a chapter or verse is right, or no more digits could follow it, go on to the verse, or check and then go to the next verse."
+        setting="jumpWhenDone"
+      />
+      {on && <DelayRow title="Pause when wrong" description="How long a miss checked by jumping ahead shows the answer." setting="wrongDelay" seconds={[1, 2, 3, 5]} />}
+    </>
+  );
+}
