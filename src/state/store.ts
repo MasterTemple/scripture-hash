@@ -155,7 +155,7 @@ export const useApp = create<State>()(
         order: "shuffle",
         reciteStyle: "letters",
         firstLetterHints: false,
-        liveTypos: false,
+        liveTypos: true,
         showPunctuation: true,
         autoAdvance: true,
         rightDelay: 0.8,
@@ -215,8 +215,14 @@ export const useApp = create<State>()(
     }),
     {
       name: "scripture-hash",
-      version: 1,
+      version: 2,
       storage: lazyStorage(),
+      // Version 2 shows typos as they're typed: saved settings from before had it off by default
+      migrate: (saved, version) => {
+        const s = saved as Partial<State>;
+        if (version < 2 && s.settings) s.settings = { ...s.settings, liveTypos: true };
+        return s as State;
+      },
       // Settings added since a visit keep their defaults
       merge: (saved, current) => {
         const s = (saved ?? {}) as Partial<State>;
