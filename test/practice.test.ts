@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { formatPrinted, loadTopos } from "@/bible/topos";
 import { pickNext } from "@/practice/queue";
-import { progress, typedRuns, words } from "@/practice/recite";
+import { progress, typedRuns, wordMarks, words } from "@/practice/recite";
 import { grade, numberDone, partsToAsk } from "@/practice/reference";
 import { verseKey } from "@/bible/types";
 
@@ -119,6 +119,21 @@ describe("typedRuns", () => {
     expect(shown("world", "wro")).toBe("w[ro]");
     expect(shown("the", "thee")).toBe("the[e]");
     expect(typedRuns("love", "lvoe").filter((r) => !r.ok).length).toBeGreaterThan(0);
+  });
+});
+
+describe("wordMarks", () => {
+  const shown = (word: string, typed: string, firstOnly = false) =>
+    wordMarks(word, typed, firstOnly).map((r) => (r.ok ? r.text : `[${r.text}]`)).join("");
+  it("draws the word as printed, its wrong letters marked", () => {
+    expect(shown("world,", "wrld")).toBe("w[o]rld,");
+    expect(shown("world", "warld")).toBe("w[o]rld");
+    expect(shown("the", "thee")).toBe("th[e]");
+    expect(shown("“God’s", "gods")).toBe("“God’s");
+    expect(shown("love", ".")).toBe("[love]");
+  });
+  it("compares the first letter alone when asked", () => {
+    expect(shown("world", "x", true)).toBe("[w]orld");
   });
 });
 

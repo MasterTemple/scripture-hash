@@ -154,3 +154,48 @@ export const wordParts = (word: string) =>
     .split(/([\p{L}\p{N}]+)/u)
     .filter(Boolean)
     .map((text) => ({ text, letters: /[\p{L}\p{N}]/u.test(text) }));
+
+/**
+ * A word typed wrong, drawn as printed with its wrong letters marked: letters typed as another,
+ * or left out, and the letter next to any typed in extra. `firstOnly` compares the first letter
+ * alone, as when typing first letters.
+ */
+export function wordMarks(word: string, typed: string, firstOnly = false): TypedRun[] {
+  const target = [...word];
+  const at = target.flatMap((c, i) => (isWordChar(c) ? [i] : []));
+  const a = at.map((i) => fold(target[i]!));
+  const b = [...normalize(typed).toLowerCase()].filter(isWordChar);
+  const wrong = new Set<number>();
+  if (firstOnly) {
+    if (a.length && a[0] !== b[0]) wrong.add(0);
+  } else {
+    // Edit distance, then walked back to find which of the word's letters went wrong
+    const d = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
+    for (let i = 1; i <= a.length; i++)
+      for (let j = 1; j <= b.length; j++)
+        d[i]![j] = Math.min(d[i - 1]![j]! + 1, d[i]![j - 1]! + 1, d[i - 1]![j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+    let i = a.length;
+    let j = b.length;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && d[i]![j] === d[i - 1]![j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1)) {
+        if (a[i - 1] !== b[j - 1]) wrong.add(i - 1);
+        i--;
+        j--;
+      } else if (i > 0 && d[i]![j] === d[i - 1]![j]! + 1) {
+        wrong.add(--i);
+      } else {
+        // A letter typed in extra marks the one after it (or before, at the end)
+        if (a.length) wrong.add(Math.min(i, a.length - 1));
+        j--;
+      }
+    }
+  }
+  const runs: TypedRun[] = [];
+  target.forEach((c, i) => {
+    const ok = !wrong.has(at.indexOf(i));
+    const last = runs[runs.length - 1];
+    if (last && last.ok === ok) last.text += c;
+    else runs.push({ text: c, ok });
+  });
+  return runs;
+}

@@ -5,7 +5,7 @@ import type { VerseRef } from "@/bible/types";
 import { Button } from "@/components/ui/button";
 import { Kbd, Progress } from "@/components/ui/primitives";
 import { cn, percent } from "@/lib/utils";
-import { progress, typedRuns, wordParts, words, type WordState } from "@/practice/recite";
+import { progress, typedRuns, wordMarks, wordParts, words, type WordState } from "@/practice/recite";
 import { advance, useSession, useVerseText } from "@/state/session";
 import { useApp, useTranslation } from "@/state/store";
 import { useVerseFont } from "@/features/settings/FontPicker";
@@ -262,11 +262,18 @@ const WordView = memo(function WordView({
   const caretEl = caret ? <span className="-mr-[3px] ml-px inline-block h-[1.1em] w-0.5 translate-y-[0.18em] rounded-full bg-primary animate-caret" /> : null;
   // Whole words count on the space after them: the word settles in with a quick green fade
   if (state === "correct") return <span className={settle ? "animate-settle" : undefined}>{text} </span>;
+  // A wrong word shows as it should be, its wrong letters in red; the space after isn't underlined
   if (state === "wrong")
     return (
-      <span className="text-destructive underline decoration-destructive/50 decoration-wavy underline-offset-4" title={`You typed “${typed}”`}>
-        {text}{" "}
-      </span>
+      <>
+        <span className="underline decoration-destructive/50 decoration-wavy underline-offset-4" title={`You typed “${typed}”`}>
+          {wordMarks(text, typed, !settle).map((run, i) => (
+            <span key={i} className={run.ok ? undefined : "text-destructive"}>
+              {run.text}
+            </span>
+          ))}
+        </span>{" "}
+      </>
     );
   if (state === "revealed") return <span className="text-warning">{text} </span>;
 
