@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
 import { BUILT_IN, DEFAULT_TRANSLATION } from "@/bible/translations";
-import type { Translation, VerseRef } from "@/bible/types";
+import type { Translation, TranslationEdit, VerseRef } from "@/bible/types";
 import { DEFAULT_FONT, type FontChoice } from "@/lib/fonts";
 import { verseKey } from "@/bible/types";
 
@@ -80,6 +80,8 @@ interface State {
   setMode: (mode: Mode) => void;
   setTranslation: (id: string) => void;
   addTranslation: (t: Translation) => void;
+  /** Renames an added translation, or changes its books; its id (and so its saved books) stays */
+  updateTranslation: (id: string, patch: TranslationEdit) => void;
   removeTranslation: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
   addSet: (name?: string, text?: string) => string;
@@ -174,6 +176,8 @@ export const useApp = create<State>()(
       setTranslation: (translationId) => set({ translationId }),
       addTranslation: (t) =>
         set((s) => ({ translations: [...s.translations.filter((x) => x.id !== t.id), t] })),
+      updateTranslation: (id, patch) =>
+        set((s) => ({ translations: s.translations.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
       removeTranslation: (id) =>
         set((s) => ({
           translations: s.translations.filter((t) => t.id !== id),

@@ -52,6 +52,9 @@ export interface Translation {
   books?: number[];
 }
 
+/** What can be changed of a translation once it's added */
+export type TranslationEdit = Partial<Pick<Translation, "name" | "abbreviation" | "attribution" | "books">>;
+
 export const verseKey = (v: VerseRef) => `${v.bookId}.${v.chapter}.${v.verse}`;
 
 export function parseVerseKey(key: string): VerseRef {
